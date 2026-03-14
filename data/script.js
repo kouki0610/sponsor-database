@@ -1,3 +1,19 @@
+function login(){
+
+const pass = document.getElementById("password").value;
+
+if(pass === "joie"){   // ←好きなパスワードに変える
+
+document.getElementById("login").style.display="none";
+document.getElementById("main").style.display="block";
+
+loadCompanies();
+
+}else{
+alert("パスワードが違います");
+}
+
+}
 async function loadCompanies(){
 
 const res = await fetch("data/companies.json");
@@ -34,4 +50,4 @@ render();
 
 }
 
-loadCompanies();
+
