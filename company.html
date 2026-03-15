@@ -4,25 +4,7 @@
 <meta charset="utf-8">
 <title>企業情報</title>
 
-<style>
-
-body{
-font-family:sans-serif;
-margin:40px;
-}
-
-table{
-border-collapse:collapse;
-margin-top:20px;
-}
-
-td,th{
-border:1px solid black;
-padding:10px;
-text-align:center;
-}
-
-</style>
+<link rel="stylesheet" href="data/style.css">
 
 </head>
 
@@ -34,43 +16,24 @@ text-align:center;
 <p><b>メール：</b><span id="email"></span></p>
 <p><b>電話：</b><span id="phone"></span></p>
 
-<a id="maplink" target="_blank">
-<img id="map" width="300">
-</a>
+<p>
+<a id="maplink" target="_blank">Googleマップで開く</a>
+</p>
 
 <h2>協賛履歴</h2>
 
-<table>
+<table border="1">
 
 <tr>
 <th>年度</th>
 <th>状況</th>
 </tr>
 
-<tr>
-<td>2025</td>
-<td id="y2025"></td>
-</tr>
-
-<tr>
-<td>2026</td>
-<td id="y2026"></td>
-</tr>
-
-<tr>
-<td>2027</td>
-<td id="y2027"></td>
-</tr>
-
-<tr>
-<td>2028</td>
-<td id="y2028"></td>
-</tr>
-
-<tr>
-<td>2029</td>
-<td id="y2029"></td>
-</tr>
+<tr><td>2025</td><td id="y2025"></td></tr>
+<tr><td>2026</td><td id="y2026"></td></tr>
+<tr><td>2027</td><td id="y2027"></td></tr>
+<tr><td>2028</td><td id="y2028"></td></tr>
+<tr><td>2029</td><td id="y2029"></td></tr>
 
 </table>
 
@@ -91,23 +54,22 @@ document.getElementById("name").textContent=company.name;
 document.getElementById("address").textContent=company.address;
 document.getElementById("email").textContent=company.email;
 document.getElementById("phone").textContent=company.phone;
-document.getElementById("map").src=company.map;
 document.getElementById("maplink").href=company.map;
-
 document.getElementById("notes").textContent=company.notes;
 
 for(const year in company.years){
 
-const status = company.years[year];
-const cell = document.getElementById("y"+year);
+const status=company.years[year];
+const cell=document.getElementById("y"+year);
 
-cell.textContent = status;
+cell.textContent=status;
 
 if(status==="○") cell.className="status-ok";
 if(status==="△") cell.className="status-maybe";
 if(status==="×") cell.className="status-no";
 
 }
+
 });
 
 </script>
