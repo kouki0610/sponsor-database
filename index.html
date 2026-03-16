@@ -147,11 +147,9 @@ const li=document.createElement("li");
 li.textContent=c.name+" ["+(status||"未訪問")+"]";
 
 li.onclick=()=>{
-
-location.href="company.html?id="+c.id;
-
+location.href="company.html?id="+c.id+"&login=true";
 };
-
+  
 list.appendChild(li);
 
 if(status){
