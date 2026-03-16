@@ -232,6 +232,15 @@ a.click();
 
 }
 
+if(localStorage.getItem("login")==="ok"){
+
+document.getElementById("login").style.display="none";
+document.getElementById("main").style.display="block";
+
+loadCompanies();
+
+}
+
 </script>
 
 </body>
