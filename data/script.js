@@ -33,7 +33,6 @@ function loadCompanies(){
 const list = document.getElementById("companyList");
 const search = document.getElementById("search");
 
-
 db.ref("companies").on("value", snapshot => {
 
 const companies = snapshot.val() || {};
@@ -61,7 +60,13 @@ list.appendChild(li);
 }
 
 search.oninput=()=>render(search.value);
-  function addCompany(){
+
+render();
+
+});
+
+}
+function addCompany(){
 
 const name = prompt("企業名");
 if(!name) return;
@@ -87,9 +92,6 @@ db.ref("companies/"+id).set(company);
 alert("企業追加しました");
 
 }
-
-render();
-
 });
 
 }
