@@ -33,9 +33,10 @@ function loadCompanies(){
 const list = document.getElementById("companyList");
 const search = document.getElementById("search");
 
+
 db.ref("companies").on("value", snapshot => {
 
-const companies = snapshot.val() || [];
+const companies = snapshot.val() || {};
 
 function render(filter=""){
 
@@ -56,6 +57,7 @@ location.href="company.html?id="+c.id;
 list.appendChild(li);
 
 });
+
 }
 
 search.oninput=()=>render(search.value);
