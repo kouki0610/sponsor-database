@@ -126,7 +126,26 @@ function showAll(){
 renderCompanies(allCompanies);
 
 }
+function exportCSV(){
 
+let csv = "企業名,住所,メール,電話\n";
+
+Object.values(allCompanies).forEach(c => {
+
+csv += `"${c.name || ""}","${c.address || ""}","${c.email || ""}","${c.phone || ""}"\n`;
+
+});
+
+const blob = new Blob([csv], {type:"text/csv"});
+
+const link = document.createElement("a");
+
+link.href = URL.createObjectURL(blob);
+link.download = "companies.csv";
+
+link.click();
+
+}
 db.ref("companies/"+id).set(company);
 
 alert("企業追加しました");
