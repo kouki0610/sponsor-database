@@ -144,19 +144,18 @@ document.getElementById("name").textContent=company.name;
 document.getElementById("email").textContent=company.email;
 document.getElementById("phone").textContent=company.phone;
 
-if(company.map){
-document.getElementById("map").src=company.map;
-document.getElementById("maplink").href=company.map;
-}
-
-const years=company.years||{};
-
-["2025","2026","2027"].forEach(y=>{
-
 if(years[y]){
 
-document.getElementById("s"+y).value=years[y].status||"";
-document.getElementById("n"+y).value=years[y].note||"";
+if(typeof years[y] === "string"){
+
+document.getElementById("s"+y).value = years[y];
+
+}else{
+
+document.getElementById("s"+y).value = years[y].status || "";
+document.getElementById("n"+y).value = years[y].note || "";
+
+}
 
 }
 
