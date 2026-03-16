@@ -147,8 +147,7 @@ const li=document.createElement("li");
 li.textContent=c.name+" ["+(status||"未訪問")+"]";
 
 li.onclick=()=>{
-location.href="company.html?id="+c.id+"&login=true";
-};
+location.href="company.html?id="+c.id+"&auth=ok";
   
 list.appendChild(li);
 
