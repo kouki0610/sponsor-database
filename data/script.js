@@ -61,6 +61,32 @@ list.appendChild(li);
 }
 
 search.oninput=()=>render(search.value);
+  function addCompany(){
+
+const name = prompt("企業名");
+if(!name) return;
+
+const email = prompt("メール");
+const phone = prompt("電話");
+const map = prompt("GoogleMap URL");
+const notes = prompt("備考");
+
+const id = Date.now();
+
+const company = {
+ id:id,
+ name:name,
+ email:email,
+ phone:phone,
+ map:map,
+ notes:notes
+};
+
+db.ref("companies/"+id).set(company);
+
+alert("企業追加しました");
+
+}
 
 render();
 
