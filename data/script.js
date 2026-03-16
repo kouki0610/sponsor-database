@@ -88,6 +88,44 @@ const company = {
  notes:notes
 };
 
+let allCompanies = {};
+
+function showSponsors(){
+
+const list = document.getElementById("companyList");
+
+list.innerHTML="";
+
+Object.values(allCompanies)
+.filter(c => {
+
+if(!c.years) return false;
+
+return Object.values(c.years).includes("○");
+
+})
+.forEach(c => {
+
+const li=document.createElement("li");
+
+li.textContent=c.name;
+
+li.onclick=()=>{
+location.href="company.html?id="+c.id;
+};
+
+list.appendChild(li);
+
+});
+
+}
+
+function showAll(){
+
+renderCompanies(allCompanies);
+
+}
+
 db.ref("companies/"+id).set(company);
 
 alert("企業追加しました");
