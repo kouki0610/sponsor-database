@@ -112,8 +112,10 @@ document.getElementById("name").textContent=company.name;
 document.getElementById("email").textContent=company.email;
 document.getElementById("phone").textContent=company.phone;
 
+if(company.map){
 document.getElementById("map").src=company.map;
 document.getElementById("maplink").href=company.map;
+}
 
 const years=company.years||{};
 
