@@ -146,6 +146,29 @@ link.download = "companies.csv";
 link.click();
 
 }
+const auth = firebase.auth();
+
+function login(){
+
+const email = prompt("メールアドレス");
+const pass = prompt("パスワード");
+
+auth.signInWithEmailAndPassword(email,pass)
+.then(()=>{
+
+document.getElementById("login").style.display="none";
+document.getElementById("main").style.display="block";
+
+loadCompanies();
+
+})
+.catch(()=>{
+
+alert("ログイン失敗");
+
+});
+
+}
 db.ref("companies/"+id).set(company);
 
 alert("企業追加しました");
