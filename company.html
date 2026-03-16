@@ -2,12 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>協賛企業データベース</title>
-
-<link rel="stylesheet" href="data/style.css">
-
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<title>企業情報</title>
 
 <style>
 
@@ -16,58 +11,100 @@ font-family:sans-serif;
 margin:40px;
 }
 
-button{
-margin:5px;
+table{
+border-collapse:collapse;
+margin-top:20px;
 }
 
-#stats{
-margin-top:10px;
-font-size:18px;
+td,th{
+border:1px solid black;
+padding:10px;
+text-align:center;
+}
+
+.status-ok{
+color:green;
+font-weight:bold;
+}
+
+.status-maybe{
+color:orange;
+font-weight:bold;
+}
+
+.status-no{
+color:red;
+font-weight:bold;
+}
+
+button{
+margin-bottom:20px;
 }
 
 </style>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 
 </head>
 
 <body>
 
-<div id="login">
+<button onclick="location.href='index.html'">← 一覧に戻る</button>
 
-<h2>ログイン</h2>
+<h1 id="name"></h1>
 
-<input type="password" id="password" placeholder="パスワード">
+<p><b>住所：</b><span id="address"></span></p>
+<p><b>メール：</b><span id="email"></span></p>
+<p><b>電話：</b><span id="phone"></span></p>
 
-<button onclick="login()">Log in</button>
+<a id="maplink" target="_blank">
+<img id="map" width="300">
+</a>
 
-</div>
+<h2>協賛履歴</h2>
 
-<div id="main" style="display:none">
+<table>
 
-<h1>協賛企業データベース</h1>
+<tr>
+<th>年度</th>
+<th>状況</th>
+</tr>
 
-<input type="text" id="search" placeholder="企業名検索">
+<tr>
+<td>2025</td>
+<td id="y2025"></td>
+</tr>
 
-<br><br>
+<tr>
+<td>2026</td>
+<td id="y2026"></td>
+</tr>
 
-<button onclick="showAll()">全部</button>
-<button onclick="showUnvisited()">未訪問</button>
-<button onclick="showSupport()">協賛</button>
-<button onclick="showMaybe()">検討</button>
+<tr>
+<td>2027</td>
+<td id="y2027"></td>
+</tr>
 
-<button onclick="addCompany()">＋企業追加</button>
+<tr>
+<td>2028</td>
+<td id="y2028"></td>
+</tr>
 
-<div id="stats"></div>
+<tr>
+<td>2029</td>
+<td id="y2029"></td>
+</tr>
 
-<ul id="companyList"></ul>
+</table>
 
-</div>
+<p><b>備考：</b><span id="notes"></span></p>
 
 <script>
 
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-
-<script>
+if(localStorage.getItem("loggedin")!=="true"){
+location.href="index.html";
+}
 
 const firebaseConfig = {
 apiKey: "AIzaSyBMTL3U-88HpEXXW2jbW9QzmTk-JO17AcI",
@@ -89,10 +126,16 @@ db.ref("companies/"+id).once("value",snapshot=>{
 
 const company=snapshot.val();
 
-document.getElementById("name").textContent=company.name;
+if(!company){
+alert("企業データが見つかりません");
+return;
+}
+
+document.getElementById("name").textContent=company.name||"";
 document.getElementById("address").textContent=company.address||"";
 document.getElementById("email").textContent=company.email||"";
 document.getElementById("phone").textContent=company.phone||"";
+
 document.getElementById("map").src=company.map||"";
 document.getElementById("maplink").href=company.map||"";
 
@@ -109,7 +152,7 @@ if(!cell) continue;
 
 cell.textContent=status;
 
-if(status==="○") cell.className="status-ok";
+if(status==="○"||status==="◎") cell.className="status-ok";
 if(status==="△") cell.className="status-maybe";
 if(status==="×") cell.className="status-no";
 
@@ -117,7 +160,6 @@ if(status==="×") cell.className="status-no";
 
 });
 
-</script>
 </script>
 
 </body>
