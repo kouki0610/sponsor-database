@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <title>企業情報</title>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
 <style>
 
 body{
@@ -22,35 +25,17 @@ padding:10px;
 text-align:center;
 }
 
-.status-ok{
-color:green;
-font-weight:bold;
-}
-
-.status-maybe{
-color:orange;
-font-weight:bold;
-}
-
-.status-no{
-color:red;
-font-weight:bold;
-}
-
-button{
-margin-bottom:20px;
-}
+.status-ok{color:green;font-weight:bold;}
+.status-maybe{color:orange;font-weight:bold;}
+.status-no{color:red;font-weight:bold;}
 
 </style>
-
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 
 </head>
 
 <body>
 
-<button onclick="location.href='index.html'">← 一覧に戻る</button>
+<button onclick="location.href='index.html'">←一覧</button>
 
 <h1 id="name"></h1>
 
@@ -66,35 +51,13 @@ margin-bottom:20px;
 
 <table>
 
-<tr>
-<th>年度</th>
-<th>状況</th>
-</tr>
+<tr><th>年度</th><th>状況</th></tr>
 
-<tr>
-<td>2025</td>
-<td id="y2025"></td>
-</tr>
-
-<tr>
-<td>2026</td>
-<td id="y2026"></td>
-</tr>
-
-<tr>
-<td>2027</td>
-<td id="y2027"></td>
-</tr>
-
-<tr>
-<td>2028</td>
-<td id="y2028"></td>
-</tr>
-
-<tr>
-<td>2029</td>
-<td id="y2029"></td>
-</tr>
+<tr><td>2025</td><td id="y2025"></td></tr>
+<tr><td>2026</td><td id="y2026"></td></tr>
+<tr><td>2027</td><td id="y2027"></td></tr>
+<tr><td>2028</td><td id="y2028"></td></tr>
+<tr><td>2029</td><td id="y2029"></td></tr>
 
 </table>
 
@@ -117,44 +80,39 @@ appId: "1:567202456256:web:156b0587040cbbfaa1c325"
 };
 
 firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+const db=firebase.database();
 
 const params=new URLSearchParams(location.search);
 const id=params.get("id");
 
-db.ref("companies/"+id).once("value",snapshot=>{
+db.ref("companies/"+id).once("value",snap=>{
 
-const company=snapshot.val();
+const c=snap.val();
 
-if(!company){
-alert("企業データが見つかりません");
-return;
-}
+document.getElementById("name").textContent=c.name||"";
+document.getElementById("address").textContent=c.address||"";
+document.getElementById("email").textContent=c.email||"";
+document.getElementById("phone").textContent=c.phone||"";
 
-document.getElementById("name").textContent=company.name||"";
-document.getElementById("address").textContent=company.address||"";
-document.getElementById("email").textContent=company.email||"";
-document.getElementById("phone").textContent=company.phone||"";
+document.getElementById("map").src=c.map||"";
+document.getElementById("maplink").href=c.map||"";
 
-document.getElementById("map").src=company.map||"";
-document.getElementById("maplink").href=company.map||"";
+document.getElementById("notes").textContent=c.notes||"";
 
-document.getElementById("notes").textContent=company.notes||"";
+const years=c.years||{};
 
-const years=company.years||{};
+for(const y in years){
 
-for(const year in years){
-
-const status=years[year];
-const cell=document.getElementById("y"+year);
+const s=years[y];
+const cell=document.getElementById("y"+y);
 
 if(!cell) continue;
 
-cell.textContent=status;
+cell.textContent=s;
 
-if(status==="○"||status==="◎") cell.className="status-ok";
-if(status==="△") cell.className="status-maybe";
-if(status==="×") cell.className="status-no";
+if(s==="○"||s==="◎") cell.className="status-ok";
+if(s==="△") cell.className="status-maybe";
+if(s==="×") cell.className="status-no";
 
 }
 
