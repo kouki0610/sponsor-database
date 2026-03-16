@@ -37,6 +37,7 @@ margin:2px;
 <button onclick="editCompany()">編集</button>
 <button onclick="deleteCompany()">削除</button>
 
+<p><b>住所：</b><span id="address"></span></p>
 <p><b>メール：</b><span id="email"></span></p>
 <p><b>電話：</b><span id="phone"></span></p>
 
@@ -109,6 +110,7 @@ db.ref("companies/"+id).on("value", snapshot => {
 const company=snapshot.val();
 
 document.getElementById("name").textContent=company.name;
+document.getElementById("address").textContent=company.address || "";
 document.getElementById("email").textContent=company.email;
 document.getElementById("phone").textContent=company.phone;
 
@@ -133,13 +135,15 @@ db.ref("companies/"+id+"/years/"+year).set(status);
 
 function editCompany(){
 
-const name = prompt("企業名を変更", document.getElementById("name").textContent);
-const email = prompt("メールを変更", document.getElementById("email").textContent);
-const phone = prompt("電話を変更", document.getElementById("phone").textContent);
+const name = prompt("企業名", document.getElementById("name").textContent);
+const address = prompt("住所", document.getElementById("address").textContent);
+const email = prompt("メール", document.getElementById("email").textContent);
+const phone = prompt("電話", document.getElementById("phone").textContent);
 const map = prompt("GoogleMap URL", document.getElementById("maplink").href);
 
 db.ref("companies/"+id).update({
 name:name,
+address:address,
 email:email,
 phone:phone,
 map:map
