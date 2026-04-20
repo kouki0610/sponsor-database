@@ -6,7 +6,6 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 
 <style>
 body{font-family:sans-serif;margin:40px;}
@@ -57,13 +56,6 @@ input,select{
  border:none;
  border-radius:4px;
 }
-
-.pdf-box{
- margin-top:10px;
- padding:10px;
- border:1px solid #ccc;
- background:#f9f9f9;
-}
 </style>
 
 </head>
@@ -82,13 +74,6 @@ input,select{
 <p><b>電話：</b><span id="phone"></span></p>
 
 <p><b>地図：</b><a id="maplink" target="_blank">開く</a></p>
-
-<h2>企業PDF</h2>
-<div class="pdf-box">
- <a id="pdfLink">未登録</a>
- <br><br>
- <button onclick="uploadPDF()">PDFアップロード</button>
-</div>
 
 <h2>協賛履歴</h2>
 
@@ -116,8 +101,7 @@ const firebaseConfig = {
  apiKey: "AIzaSyBMTL3U-88HpEXXW2jbW9QzmTk-JO17AcI",
  authDomain: "teienn-kyousan.firebaseapp.com",
  databaseURL: "https://teienn-kyousan-default-rtdb.asia-southeast1.firebasedatabase.app",
- projectId: "teienn-kyousan",
- storageBucket: "teienn-kyousan.appspot.com"
+ projectId: "teienn-kyousan"
 };
 
 if(!firebase.apps.length){
@@ -125,7 +109,6 @@ if(!firebase.apps.length){
 }
 
 const db = firebase.database();
-const storage = firebase.storage();
 const id = new URLSearchParams(location.search).get("id");
 
 // =========================
@@ -146,23 +129,6 @@ function load(){
   document.getElementById("maplink").href =
    (c.map||"").startsWith("http") ? c.map : "#";
 
-  // =========================
-  // PDF（Storage方式）
-  // =========================
-  const pdf = document.getElementById("pdfLink");
-
-  if(c.pdfUrl){
-   pdf.href = c.pdfUrl;
-   pdf.textContent = "PDFを見る";
-   pdf.target = "_blank";
-  }else{
-   pdf.removeAttribute("href");
-   pdf.textContent = "未登録";
-  }
-
-  // =========================
-  // 年度
-  // =========================
   const years = c.years || {};
   const table = document.getElementById("yearTable");
   table.innerHTML = "";
@@ -275,42 +241,6 @@ function load(){
 
  });
 
-}
-
-// =========================
-// PDFアップロード（Storage正規）
-// =========================
-function uploadPDF(){
-
- const fileInput = document.createElement("input");
- fileInput.type = "file";
- fileInput.accept = "application/pdf";
-
- fileInput.onchange = async (e)=>{
-
-  const file = e.target.files[0];
-  if(!file) return;
-
-  const ref = storage.ref(
-   "pdfs/"+id+"/"+Date.now()+"_"+file.name
-  );
-
-  console.log("upload start");
-
-  await ref.put(file);
-
-  const url = await ref.getDownloadURL();
-
-  await db.ref("companies/"+id).update({
-   pdfUrl: url
-  });
-
-  alert("PDF登録完了");
-  load();
-
- };
-
- fileInput.click();
 }
 
 // =========================
