@@ -35,6 +35,8 @@ input{width:80px;padding:5px;}
 <p><b>メール：</b><span id="email"></span></p>
 <p><b>電話：</b><span id="phone"></span></p>
 
+<p><b>地図：</b><a id="maplink" target="_blank">開く</a></p>
+
 <h2>協賛履歴</h2>
 
 <table>
@@ -49,9 +51,11 @@ input{width:80px;padding:5px;}
 <tbody id="yearTable"></tbody>
 </table>
 
+<h2>備考</h2>
+<p id="notes"></p>
+
 <script>
 
-// Firebase
 const firebaseConfig = {
  apiKey: "AIzaSyBMTL3U-88HpEXXW2jbW9QzmTk-JO17AcI",
  databaseURL: "https://teienn-kyousan-default-rtdb.asia-southeast1.firebasedatabase.app"
@@ -76,6 +80,13 @@ function load(){
   document.getElementById("email").textContent = c.email || "";
   document.getElementById("phone").textContent = c.phone || "";
 
+  // 🟦 備考（ここ重要）
+  document.getElementById("notes").textContent = c.notes || "";
+
+  // 🟦 マップ（安全）
+  document.getElementById("maplink").href =
+   (c.map && c.map.startsWith("http")) ? c.map : "#";
+
   let years = c.years || {};
 
   if(Object.keys(years).length === 0){
@@ -92,11 +103,9 @@ function load(){
 
    const tr = document.createElement("tr");
 
-   // 年度
    const tdYear = document.createElement("td");
    tdYear.textContent = y;
 
-   // 状態
    const tdStatus = document.createElement("td");
    tdStatus.textContent = data.status || "";
    tdStatus.onclick = ()=>changeStatus(y);
@@ -105,19 +114,18 @@ function load(){
    if(data.status==="△") tdStatus.className="status-maybe";
    if(data.status==="×") tdStatus.className="status-no";
 
-   // 金額
    const tdAmount = document.createElement("td");
    const input = document.createElement("input");
    input.type = "number";
    input.value = data.amount || 0;
 
    input.onchange = ()=>{
-    db.ref("companies/"+id+"/years/"+y+"/amount").set(Number(input.value));
+    db.ref("companies/"+id+"/years/"+y+"/amount")
+    .set(Number(input.value));
    };
 
    tdAmount.appendChild(input);
 
-   // 削除
    const tdDelete = document.createElement("td");
    const btn = document.createElement("button");
    btn.textContent = "削除";
@@ -189,16 +197,12 @@ function deleteYear(year){
 
 }
 
-// 編集（安全版）
+// 編集
 function editCompany(){
 
  db.ref("companies/"+id).once("value", snap=>{
   const c = snap.val();
-
-  if(!c){
-   alert("データがありません");
-   return;
-  }
+  if(!c) return;
 
   const name = prompt("企業名", c.name || "");
   if(name===null) return;
@@ -221,35 +225,27 @@ function editCompany(){
   if(!confirm("更新しますか？")) return;
 
   db.ref("companies/"+id).update({
-   name,
-   address,
-   email,
-   phone,
-   map,
-   notes
+   name,address,email,phone,map,notes
   });
 
-  alert("更新しました");
   load();
 
  });
 
 }
 
-// 削除（企業）
+// 削除
 function deleteCompany(){
 
  if(!confirm("企業ごと削除しますか？")) return;
 
  db.ref("companies/"+id).remove()
  .then(()=>{
-  alert("削除しました");
   location.href="index.html";
  });
 
 }
 
-// 初期表示
 load();
 
 </script>
