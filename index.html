@@ -110,7 +110,7 @@ function loadCompanies(){
  });
 }
 
-// 描画（最新年度対応）
+// 描画（修正版）
 function render(filter=""){
 
 const list = document.getElementById("companyList");
@@ -122,11 +122,11 @@ Object.values(allCompanies)
 
 const li = document.createElement("li");
 
-// 年度データ取得
-const years = c.years || {};
+// years取得（無ければ2025作る）
+let years = c.years || {"2025":""};
 
-// 最新年度取得
-const latestYear = Object.keys(years).sort().slice(-1)[0] || "";
+// 最新年度
+const latestYear = Object.keys(years).sort().slice(-1)[0];
 
 // 状態
 const status = years[latestYear] || "";
@@ -142,11 +142,11 @@ li.innerHTML = `
  ${c.name}
  <span class="status ${cls}" 
  onclick="changeStatusFromList('${c.id}','${latestYear}', event)">
-  ${latestYear ? latestYear + ":" : ""}${status}
+  ${latestYear}:${status}
  </span>
 `;
 
-// 詳細ページへ
+// 詳細ページ
 li.onclick = ()=>{
  location.href="company.html?id="+c.id;
 };
@@ -162,20 +162,28 @@ document.getElementById("search").oninput = e=>{
 render(e.target.value);
 };
 
-// 状態変更
+// 状態変更（完全修正版）
 function changeStatusFromList(companyId, year, event){
 
 event.stopPropagation();
 
-if(!year){
- alert("年度がありません");
- return;
-}
-
 db.ref("companies/"+companyId).once("value", snap=>{
 
-const c = snap.val();
-const current = c.years?.[year] || "";
+const c = snap.val() || {};
+let years = c.years || {};
+
+// 年度が無い場合は作る
+if(!year){
+ year = "2025";
+}
+
+// yearsが空なら初期化
+if(Object.keys(years).length === 0){
+ years = {"2025":""};
+}
+
+// 現在値
+const current = years[year] || "";
 
 let next = "";
 
@@ -184,14 +192,14 @@ else if(current==="○") next="△";
 else if(current==="△") next="×";
 else if(current==="×") next="";
 
-// 更新
+// 保存
 db.ref("companies/"+companyId+"/years/"+year).set(next);
 
 });
 
 }
 
-// 追加
+// 追加（2025だけ）
 function addCompany(){
 
 const name = prompt("企業名");
