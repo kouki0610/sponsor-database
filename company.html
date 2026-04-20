@@ -17,11 +17,8 @@ button:hover{background:#1a5dc9;}
 .status-no{color:red;font-weight:bold;}
 table{border-collapse:collapse;margin-top:20px;}
 td,th{border:1px solid black;padding:10px;text-align:center;}
-.small-btn{
- padding:5px 8px;
- font-size:12px;
- background:red;
-}
+.small-btn{padding:5px 8px;font-size:12px;background:red;}
+input{width:80px;padding:5px;}
 </style>
 </head>
 
@@ -38,26 +35,21 @@ td,th{border:1px solid black;padding:10px;text-align:center;}
 <p><b>メール：</b><span id="email"></span></p>
 <p><b>電話：</b><span id="phone"></span></p>
 
-<p><b>地図：</b><a id="maplink" target="_blank">開く</a></p>
-
 <h2>協賛履歴（クリックで変更）</h2>
 
 <table>
 <thead>
-<tr><th>年度</th><th>状況</th><th>削除</th></tr>
+<tr>
+<th>年度</th>
+<th>状況</th>
+<th>金額</th>
+<th>削除</th>
+</tr>
 </thead>
 <tbody id="yearTable"></tbody>
 </table>
 
-<h2>備考</h2>
-<p id="notes"></p>
-
 <script>
-
-// ログインチェック
-if(localStorage.getItem("loggedin")!=="true"){
- location.href="index.html";
-}
 
 // Firebase
 const firebaseConfig = {
@@ -68,13 +60,11 @@ const firebaseConfig = {
 if (!firebase.apps.length) {
  firebase.initializeApp(firebaseConfig);
 }
-
 const db = firebase.database();
 
-// ID取得
 const id = new URLSearchParams(location.search).get("id");
 
-// 表示（2025初期化付き）
+// 表示
 function load(){
  db.ref("companies/"+id).once("value", snap=>{
   const c = snap.val();
@@ -84,14 +74,11 @@ function load(){
   document.getElementById("address").textContent = c.address || "";
   document.getElementById("email").textContent = c.email || "";
   document.getElementById("phone").textContent = c.phone || "";
-  document.getElementById("notes").textContent = c.notes || "";
-  document.getElementById("maplink").href = c.map || "#";
 
   let years = c.years || {};
 
-  // 🔥 初期年度を2025にする（保存もする）
   if(Object.keys(years).length === 0){
-   years = {"2025":""};
+   years = {"2025":{status:"",amount:0}};
    db.ref("companies/"+id+"/years").set(years);
   }
 
@@ -102,13 +89,12 @@ function load(){
 
    const tr = document.createElement("tr");
 
-   // 年度
    const tdYear = document.createElement("td");
    tdYear.textContent = y;
 
    // 状態
    const tdStatus = document.createElement("td");
-   const s = years[y] || "";
+   const s = years[y].status || "";
    tdStatus.textContent = s;
 
    tdStatus.onclick = ()=>changeStatus(y);
@@ -117,7 +103,19 @@ function load(){
    if(s==="△") tdStatus.className="status-maybe";
    if(s==="×") tdStatus.className="status-no";
 
-   // 削除ボタン
+   // 金額
+   const tdAmount = document.createElement("td");
+   const input = document.createElement("input");
+   input.type = "number";
+   input.value = years[y].amount || 0;
+
+   input.onchange = ()=>{
+    db.ref("companies/"+id+"/years/"+y+"/amount").set(Number(input.value));
+   };
+
+   tdAmount.appendChild(input);
+
+   // 削除
    const tdDelete = document.createElement("td");
    const btn = document.createElement("button");
    btn.textContent = "削除";
@@ -132,6 +130,7 @@ function load(){
 
    tr.appendChild(tdYear);
    tr.appendChild(tdStatus);
+   tr.appendChild(tdAmount);
    tr.appendChild(tdDelete);
 
    table.appendChild(tr);
@@ -149,11 +148,11 @@ function changeStatus(year){
   const c = snap.val() || {};
   let years = c.years || {};
 
-  if(Object.keys(years).length === 0){
-   years = {"2025":""};
+  if(!years[year]){
+   years[year] = {status:"",amount:0};
   }
 
-  const current = years[year] || "";
+  const current = years[year].status || "";
 
   let next = "";
 
@@ -162,7 +161,7 @@ function changeStatus(year){
   else if(current==="△") next="×";
   else if(current==="×") next="";
 
-  db.ref("companies/"+id+"/years/"+year).set(next);
+  db.ref("companies/"+id+"/years/"+year+"/status").set(next);
 
   load();
 
@@ -174,77 +173,32 @@ function addYear(){
  const year = prompt("追加する年度（例：2030）");
  if(!year) return;
 
- db.ref("companies/"+id+"/years/"+year).set("");
+ db.ref("companies/"+id+"/years/"+year).set({
+  status:"",
+  amount:0
+ });
 
  load();
 }
 
 // 年度削除
 function deleteYear(year){
-
- if(!confirm(year + "年を削除する？")) return;
+ if(!confirm(year+"年を削除する？")) return;
 
  db.ref("companies/"+id+"/years/"+year).remove()
- .then(()=>{
-  load();
- });
-
+ .then(()=>load());
 }
 
-// 編集
-function editCompany(){
- db.ref("companies/"+id).once("value", snap=>{
-  const c = snap.val();
-
-  const name = prompt("企業名", c.name);
-  if(name===null) return;
-
-  const address = prompt("住所", c.address);
-  if(address===null) return;
-
-  const email = prompt("メール", c.email);
-  if(email===null) return;
-
-  const phone = prompt("電話", c.phone);
-  if(phone===null) return;
-
-  const map = prompt("GoogleMap URL", c.map);
-  if(map===null) return;
-
-  const notes = prompt("備考", c.notes);
-  if(notes===null) return;
-
-  if(!confirm("更新しますか？")) return;
-
-  db.ref("companies/"+id).update({
-   name:name,
-   address:address,
-   email:email,
-   phone:phone,
-   map:map,
-   notes:notes
-  });
-
-  alert("更新しました");
-  load();
- });
-}
-
-// 削除（企業ごと）
+// 企業削除
 function deleteCompany(){
- if(!confirm("本当に削除する？")) return;
+ if(!confirm("企業ごと削除する？")) return;
 
  db.ref("companies/"+id).remove()
- .then(()=>{
-  alert("削除しました");
-  location.href="index.html";
- });
+ .then(()=>location.href="index.html");
 }
 
-// 初期表示
 load();
 
 </script>
-
 </body>
 </html>
