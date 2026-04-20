@@ -15,6 +15,8 @@ button:hover{background:#1a5dc9;}
 .status-ok{color:green;font-weight:bold;}
 .status-maybe{color:orange;font-weight:bold;}
 .status-no{color:red;font-weight:bold;}
+table{border-collapse:collapse;margin-top:20px;}
+td,th{border:1px solid black;padding:10px;text-align:center;}
 </style>
 </head>
 
@@ -35,15 +37,11 @@ button:hover{background:#1a5dc9;}
 
 <h2>協賛履歴（クリックで変更）</h2>
 
-<table border="1">
+<table>
+<thead>
 <tr><th>年度</th><th>状況</th></tr>
-
-<tr><td>2025</td><td id="y2025" onclick="changeStatus('2025')"></td></tr>
-<tr><td>2026</td><td id="y2026" onclick="changeStatus('2026')"></td></tr>
-<tr><td>2027</td><td id="y2027" onclick="changeStatus('2027')"></td></tr>
-<tr><td>2028</td><td id="y2028" onclick="changeStatus('2028')"></td></tr>
-<tr><td>2029</td><td id="y2029" onclick="changeStatus('2029')"></td></tr>
-
+</thead>
+<tbody id="yearTable"></tbody>
 </table>
 
 <h2>備考</h2>
@@ -71,7 +69,7 @@ const db = firebase.database();
 // ID取得
 const id = new URLSearchParams(location.search).get("id");
 
-// 表示
+// 表示（完全版）
 function load(){
  db.ref("companies/"+id).once("value", snap=>{
   const c = snap.val();
@@ -84,20 +82,36 @@ function load(){
   document.getElementById("notes").textContent = c.notes || "";
   document.getElementById("maplink").href = c.map || "#";
 
-  const years = c.years || {};
+  const years = c.years || {"2025":""};
 
-  Object.keys(years).forEach(y=>{
-   const cell = document.getElementById("y"+y);
-   if(!cell) return;
+  const table = document.getElementById("yearTable");
+  table.innerHTML = "";
 
+  // 年度ループ
+  Object.keys(years).sort().forEach(y=>{
+
+   const tr = document.createElement("tr");
+
+   const tdYear = document.createElement("td");
+   tdYear.textContent = y;
+
+   const tdStatus = document.createElement("td");
    const s = years[y] || "";
+   tdStatus.textContent = s;
 
-   cell.textContent = s;
-   cell.className = "";
+   // クリックで変更
+   tdStatus.onclick = ()=>changeStatus(y);
 
-   if(s==="○") cell.className="status-ok";
-   if(s==="△") cell.className="status-maybe";
-   if(s==="×") cell.className="status-no";
+   // 色
+   if(s==="○") tdStatus.className="status-ok";
+   if(s==="△") tdStatus.className="status-maybe";
+   if(s==="×") tdStatus.className="status-no";
+
+   tr.appendChild(tdYear);
+   tr.appendChild(tdStatus);
+
+   table.appendChild(tr);
+
   });
 
  });
@@ -131,7 +145,7 @@ function changeStatus(year){
  });
 }
 
-// 年度追加 ← ちゃんと外にある
+// 年度追加
 function addYear(){
 
  const year = prompt("追加する年度（例：2030）");
