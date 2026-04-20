@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>協賛金額集計</title>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<style>
+body{
+ font-family:sans-serif;
+ margin:40px;
+ background:#f5f5f5;
+}
+
+h1{
+ text-align:center;
+}
+
+table{
+ width:100%;
+ border-collapse:collapse;
+ margin-top:20px;
+ background:white;
+}
+
+th,td{
+ border:1px solid #ccc;
+ padding:12px;
+ text-align:center;
+ font-size:18px;
+}
+
+th{
+ background:#2c7be5;
+ color:white;
+}
+
+.total{
+ font-weight:bold;
+ font-size:20px;
+}
+
+button{
+ padding:10px 15px;
+ margin-bottom:10px;
+ border:none;
+ background:#2c7be5;
+ color:white;
+ border-radius:5px;
+ cursor:pointer;
+}
+
+button:hover{
+ background:#1a5dc9;
+}
+</style>
+
+</head>
+
+<body>
+
+<button onclick="location.href='index.html'">←戻る</button>
+
+<h1>年度別 協賛金額合計</h1>
+
+<table>
+<thead>
+<tr>
+<th>年度</th>
+<th>合計金額</th>
+</tr>
+</thead>
+<tbody id="totalTable"></tbody>
+</table>
+
+<script>
+
+// Firebase
+const firebaseConfig = {
+ apiKey: "AIzaSyBMTL3U-88HpEXXW2jbW9QzmTk-JO17AcI",
+ databaseURL: "https://teienn-kyousan-default-rtdb.asia-southeast1.firebasedatabase.app"
+};
+
+if (!firebase.apps.length) {
+ firebase.initializeApp(firebaseConfig);
+}
+
+const db = firebase.database();
+
+// 合計計算
+function loadTotals(){
+
+ db.ref("companies").on("value", snapshot => {
+
+  const all = snapshot.val() || {};
+  let totals = {};
+
+  Object.values(all).forEach(c=>{
+   if(!c.years) return;
+
+   Object.entries(c.years).forEach(([year,data])=>{
+
+    const amount = Number(data.amount || 0);
+
+    if(!totals[year]) totals[year] = 0;
+
+    totals[year] += amount;
+
+   });
+
+  });
+
+  const table = document.getElementById("totalTable");
+  table.innerHTML = "";
+
+  Object.keys(totals).sort().forEach(year=>{
+
+   const tr = document.createElement("tr");
+
+   const tdYear = document.createElement("td");
+   tdYear.textContent = year;
+
+   const tdAmount = document.createElement("td");
+   tdAmount.textContent = totals[year].toLocaleString() + " 円";
+   tdAmount.className = "total";
+
+   tr.appendChild(tdYear);
+   tr.appendChild(tdAmount);
+
+   table.appendChild(tr);
+
+  });
+
+ });
+
+}
+
+// 初期実行
+loadTotals();
+
+</script>
+
+</body>
+</html>
