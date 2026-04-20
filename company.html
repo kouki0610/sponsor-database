@@ -11,6 +11,7 @@
 body{font-family:sans-serif;margin:40px;}
 button{padding:10px;margin:5px;border:none;background:#2c7be5;color:white;border-radius:5px;}
 button:hover{background:#1a5dc9;}
+.delete-btn{background:red;}
 </style>
 
 </head>
@@ -19,8 +20,8 @@ button:hover{background:#1a5dc9;}
 
 <button onclick="location.href='index.html'">←戻る</button>
 <button onclick="editCompany()">編集</button>
-<button onclick="deleteCompany()" style="background:red;">削除</button>
- 
+<button onclick="deleteCompany()" class="delete-btn">削除</button>
+
 <h1 id="name"></h1>
 
 <p><b>住所：</b><span id="address"></span></p>
@@ -53,112 +54,77 @@ const id = new URLSearchParams(location.search).get("id");
 
 // 表示
 function load(){
-db.ref("companies/"+id).once("value", snap=>{
+ db.ref("companies/"+id).once("value", snap=>{
+  const c = snap.val();
+  if(!c) return;
 
-const c = snap.val();
-if(!c) return;
-
-document.getElementById("name").textContent = c.name || "";
-document.getElementById("address").textContent = c.address || "";
-document.getElementById("email").textContent = c.email || "";
-document.getElementById("phone").textContent = c.phone || "";
-document.getElementById("notes").textContent = c.notes || "";
-document.getElementById("maplink").href = c.map || "#";
-
-});
+  document.getElementById("name").textContent = c.name || "";
+  document.getElementById("address").textContent = c.address || "";
+  document.getElementById("email").textContent = c.email || "";
+  document.getElementById("phone").textContent = c.phone || "";
+  document.getElementById("notes").textContent = c.notes || "";
+  document.getElementById("maplink").href = c.map || "#";
+ });
 }
 
 // 編集
 function editCompany(){
+ db.ref("companies/"+id).once("value", snap=>{
+  const c = snap.val();
 
-db.ref("companies/"+id).once("value", snap=>{
+  const name = prompt("企業名", c.name);
+  if(name===null) return;
 
-const c = snap.val();
+  const address = prompt("住所", c.address);
+  if(address===null) return;
 
-// 入力（初期値付き）
-const name = prompt("企業名", c.name);
-if(name===null) return;
+  const email = prompt("メール", c.email);
+  if(email===null) return;
 
-const address = prompt("住所", c.address);
-if(address===null) return;
+  const phone = prompt("電話", c.phone);
+  if(phone===null) return;
 
-const email = prompt("メール", c.email);
-if(email===null) return;
+  const map = prompt("GoogleMap URL", c.map);
+  if(map===null) return;
 
-const phone = prompt("電話", c.phone);
-if(phone===null) return;
+  const notes = prompt("備考", c.notes);
+  if(notes===null) return;
 
-const map = prompt("GoogleMap URL", c.map);
-if(map===null) return;
+  if(!confirm("更新しますか？")) return;
 
-const notes = prompt("備考", c.notes);
-if(notes===null) return;
+  db.ref("companies/"+id).update({
+   name:name,
+   address:address,
+   email:email,
+   phone:phone,
+   map:map,
+   notes:notes
+  });
 
-// 確認
-if(!confirm("更新しますか？")) return;
+  alert("更新しました");
+  load();
+ });
+}
 
-// 更新
-db.ref("companies/"+id).update({
- name:name,
- address:address,
- email:email,
- phone:phone,
- map:map,
- notes:notes
-});
+// 削除（重複なしの正しいやつ）
+function deleteCompany(){
 
-alert("更新しました");
+ if(!confirm("本当に削除する？")) return;
 
-// 再読み込み
-load();
-
-});
+ db.ref("companies/"+id).remove()
+ .then(()=>{
+  alert("削除しました");
+  location.href="index.html";
+ })
+ .catch(()=>{
+  alert("削除失敗");
+ });
 
 }
 
 // 初期表示
 load();
 
-function deleteCompany(){
-
-// URLからID取得
-const id = new URLSearchParams(location.search).get("id");
-
-// 確認
-if(!confirm("本当に削除する？")) return;
-
-// 削除
-db.ref("companies/"+id).remove()
-.then(()=>{
-
- alert("削除しました");
-
- // 一覧へ戻る
- location.href="index.html";
-
-})
-.catch(()=>{
- alert("削除失敗");
-});
-
-}
-
-function deleteCompany(){
-
-const id = new URLSearchParams(location.search).get("id");
-
-if(!confirm("本当に削除する？")) return;
-
-db.ref("companies/"+id).remove()
-.then(()=>{
- alert("削除しました");
- location.href="index.html";
-})
-.catch(()=>{
- alert("削除失敗");
-});
-
-}
 </script>
 
 </body>
