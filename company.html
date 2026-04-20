@@ -6,28 +6,39 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<style>
+body{font-family:sans-serif;margin:40px;}
+button{padding:10px;margin:5px;border:none;background:#2c7be5;color:white;border-radius:5px;}
+button:hover{background:#1a5dc9;}
+</style>
+
 </head>
 
 <body>
 
 <button onclick="location.href='index.html'">←戻る</button>
+<button onclick="editCompany()">編集</button>
 
 <h1 id="name"></h1>
-<p id="address"></p>
-<p id="email"></p>
-<p id="phone"></p>
 
-<a id="maplink" target="_blank">地図</a>
+<p><b>住所：</b><span id="address"></span></p>
+<p><b>メール：</b><span id="email"></span></p>
+<p><b>電話：</b><span id="phone"></span></p>
+
+<p><b>地図：</b><a id="maplink" target="_blank">開く</a></p>
 
 <h2>備考</h2>
 <p id="notes"></p>
 
 <script>
 
+// ログインチェック
 if(localStorage.getItem("loggedin")!=="true"){
-location.href="index.html";
+ location.href="index.html";
 }
 
+// Firebase
 const firebaseConfig = {
  apiKey: "AIza...",
  databaseURL: "https://teienn-kyousan-default-rtdb.asia-southeast1.firebasedatabase.app"
@@ -36,21 +47,76 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
+// ID取得
 const id = new URLSearchParams(location.search).get("id");
+
+// 表示
+function load(){
+db.ref("companies/"+id).once("value", snap=>{
+
+const c = snap.val();
+if(!c) return;
+
+document.getElementById("name").textContent = c.name || "";
+document.getElementById("address").textContent = c.address || "";
+document.getElementById("email").textContent = c.email || "";
+document.getElementById("phone").textContent = c.phone || "";
+document.getElementById("notes").textContent = c.notes || "";
+document.getElementById("maplink").href = c.map || "#";
+
+});
+}
+
+// 編集
+function editCompany(){
 
 db.ref("companies/"+id).once("value", snap=>{
 
-const c=snap.val();
+const c = snap.val();
 
-document.getElementById("name").textContent=c.name||"";
-document.getElementById("address").textContent=c.address||"";
-document.getElementById("email").textContent=c.email||"";
-document.getElementById("phone").textContent=c.phone||"";
-document.getElementById("notes").textContent=c.notes||"";
+// 入力（初期値付き）
+const name = prompt("企業名", c.name);
+if(name===null) return;
 
-document.getElementById("maplink").href=c.map||"#";
+const address = prompt("住所", c.address);
+if(address===null) return;
+
+const email = prompt("メール", c.email);
+if(email===null) return;
+
+const phone = prompt("電話", c.phone);
+if(phone===null) return;
+
+const map = prompt("GoogleMap URL", c.map);
+if(map===null) return;
+
+const notes = prompt("備考", c.notes);
+if(notes===null) return;
+
+// 確認
+if(!confirm("更新しますか？")) return;
+
+// 更新
+db.ref("companies/"+id).update({
+ name:name,
+ address:address,
+ email:email,
+ phone:phone,
+ map:map,
+ notes:notes
+});
+
+alert("更新しました");
+
+// 再読み込み
+load();
 
 });
+
+}
+
+// 初期表示
+load();
 
 </script>
 
