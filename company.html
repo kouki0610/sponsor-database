@@ -38,14 +38,12 @@ td,th{
  text-align:center;
 }
 
-/* 金額・備考入力 */
 input{
  width:100%;
  padding:5px;
  box-sizing:border-box;
 }
 
-/* ★横スクロール用 */
 .note-scroll{
  max-width:300px;
  overflow-x:auto;
@@ -55,7 +53,12 @@ input{
  background:#fff;
 }
 
-/* 小ボタン */
+/* ロック状態 */
+.locked{
+ background:#f5f5f5;
+ cursor:pointer;
+}
+
 .small-btn{
  background:red;
  color:white;
@@ -163,33 +166,57 @@ function load(){
    if(d.status==="△") tdStatus.className="status-maybe";
    if(d.status==="×") tdStatus.className="status-no";
 
-   // 金額
+   // 金額（ロック付き）
    const tdAmount = document.createElement("td");
    const inputAmount = document.createElement("input");
+
    inputAmount.type = "number";
    inputAmount.value = d.amount || 0;
+   inputAmount.disabled = true;
+   inputAmount.classList.add("locked");
+
+   inputAmount.onclick = ()=>{
+    if(confirm("金額を編集しますか？")){
+     inputAmount.disabled = false;
+     inputAmount.focus();
+    }
+   };
 
    inputAmount.onchange = ()=>{
     db.ref("companies/"+id+"/years/"+y+"/amount")
     .set(Number(inputAmount.value));
+
+    inputAmount.disabled = true;
    };
 
    tdAmount.appendChild(inputAmount);
 
-   // ★備考（横スクロール対応）
+   // 備考（ロック＋横スクロール）
    const tdNotes = document.createElement("td");
 
    const wrapper = document.createElement("div");
    wrapper.className = "note-scroll";
 
    const inputNotes = document.createElement("input");
+
    inputNotes.type = "text";
    inputNotes.value = d.notes || "";
+   inputNotes.disabled = true;
+   inputNotes.classList.add("locked");
    inputNotes.style.minWidth = "400px";
+
+   inputNotes.onclick = ()=>{
+    if(confirm("備考を編集しますか？")){
+     inputNotes.disabled = false;
+     inputNotes.focus();
+    }
+   };
 
    inputNotes.onchange = ()=>{
     db.ref("companies/"+id+"/years/"+y+"/notes")
     .set(inputNotes.value);
+
+    inputNotes.disabled = true;
    };
 
    wrapper.appendChild(inputNotes);
