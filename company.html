@@ -156,6 +156,31 @@ function deleteCompany(){
 
 // 初期表示
 load();
+function changeStatus(year){
+
+ db.ref("companies/"+id).once("value", snap=>{
+
+  const c = snap.val();
+
+  // 現在の状態
+  const current = c.years?.[year] || "";
+
+  let next = "";
+
+  // 状態を順番に変える
+  if(current==="") next="○";
+  else if(current==="○") next="△";
+  else if(current==="△") next="×";
+  else if(current==="×") next="";
+
+  // Firebaseに保存
+  db.ref("companies/"+id+"/years/"+year).set(next);
+
+  // 再読み込み
+  load();
+
+ });
+}
 
 </script>
 
