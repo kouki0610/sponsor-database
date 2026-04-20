@@ -17,7 +17,7 @@ button:hover{background:#1a5dc9;}
 .status-no{color:red;font-weight:bold;}
 table{border-collapse:collapse;margin-top:20px;}
 td,th{border:1px solid black;padding:10px;text-align:center;}
-.small-btn{padding:5px 8px;font-size:12px;background:red;}
+.small-btn{padding:5px 8px;font-size:12px;background:red;color:white;}
 input{width:80px;padding:5px;}
 </style>
 </head>
@@ -35,7 +35,7 @@ input{width:80px;padding:5px;}
 <p><b>メール：</b><span id="email"></span></p>
 <p><b>電話：</b><span id="phone"></span></p>
 
-<h2>協賛履歴（クリックで変更）</h2>
+<h2>協賛履歴</h2>
 
 <table>
 <thead>
@@ -60,12 +60,13 @@ const firebaseConfig = {
 if (!firebase.apps.length) {
  firebase.initializeApp(firebaseConfig);
 }
-const db = firebase.database();
 
+const db = firebase.database();
 const id = new URLSearchParams(location.search).get("id");
 
 // 表示
 function load(){
+
  db.ref("companies/"+id).once("value", snap=>{
   const c = snap.val();
   if(!c) return;
@@ -87,27 +88,28 @@ function load(){
 
   Object.keys(years).sort().forEach(y=>{
 
+   const data = years[y] || {status:"",amount:0};
+
    const tr = document.createElement("tr");
 
+   // 年度
    const tdYear = document.createElement("td");
    tdYear.textContent = y;
 
    // 状態
    const tdStatus = document.createElement("td");
-   const s = years[y].status || "";
-   tdStatus.textContent = s;
-
+   tdStatus.textContent = data.status || "";
    tdStatus.onclick = ()=>changeStatus(y);
 
-   if(s==="○") tdStatus.className="status-ok";
-   if(s==="△") tdStatus.className="status-maybe";
-   if(s==="×") tdStatus.className="status-no";
+   if(data.status==="○") tdStatus.className="status-ok";
+   if(data.status==="△") tdStatus.className="status-maybe";
+   if(data.status==="×") tdStatus.className="status-no";
 
    // 金額
    const tdAmount = document.createElement("td");
    const input = document.createElement("input");
    input.type = "number";
-   input.value = years[y].amount || 0;
+   input.value = data.amount || 0;
 
    input.onchange = ()=>{
     db.ref("companies/"+id+"/years/"+y+"/amount").set(Number(input.value));
@@ -138,39 +140,35 @@ function load(){
   });
 
  });
+
 }
 
 // 状態変更
 function changeStatus(year){
 
- db.ref("companies/"+id).once("value", snap=>{
+ db.ref("companies/"+id+"/years/"+year).once("value", snap=>{
 
-  const c = snap.val() || {};
-  let years = c.years || {};
-
-  if(!years[year]){
-   years[year] = {status:"",amount:0};
-  }
-
-  const current = years[year].status || "";
+  const data = snap.val() || {};
+  const current = data.status || "";
 
   let next = "";
-
   if(current==="") next="○";
   else if(current==="○") next="△";
   else if(current==="△") next="×";
-  else if(current==="×") next="";
+  else next="";
 
   db.ref("companies/"+id+"/years/"+year+"/status").set(next);
 
   load();
 
  });
+
 }
 
 // 年度追加
 function addYear(){
- const year = prompt("追加する年度（例：2030）");
+
+ const year = prompt("年度（例：2030）");
  if(!year) return;
 
  db.ref("companies/"+id+"/years/"+year).set({
@@ -183,22 +181,78 @@ function addYear(){
 
 // 年度削除
 function deleteYear(year){
+
  if(!confirm(year+"年を削除する？")) return;
 
  db.ref("companies/"+id+"/years/"+year).remove()
  .then(()=>load());
+
 }
 
-// 企業削除
+// 編集（安全版）
+function editCompany(){
+
+ db.ref("companies/"+id).once("value", snap=>{
+  const c = snap.val();
+
+  if(!c){
+   alert("データがありません");
+   return;
+  }
+
+  const name = prompt("企業名", c.name || "");
+  if(name===null) return;
+
+  const address = prompt("住所", c.address || "");
+  if(address===null) return;
+
+  const email = prompt("メール", c.email || "");
+  if(email===null) return;
+
+  const phone = prompt("電話", c.phone || "");
+  if(phone===null) return;
+
+  const map = prompt("GoogleMap URL", c.map || "");
+  if(map===null) return;
+
+  const notes = prompt("備考", c.notes || "");
+  if(notes===null) return;
+
+  if(!confirm("更新しますか？")) return;
+
+  db.ref("companies/"+id).update({
+   name,
+   address,
+   email,
+   phone,
+   map,
+   notes
+  });
+
+  alert("更新しました");
+  load();
+
+ });
+
+}
+
+// 削除（企業）
 function deleteCompany(){
- if(!confirm("企業ごと削除する？")) return;
+
+ if(!confirm("企業ごと削除しますか？")) return;
 
  db.ref("companies/"+id).remove()
- .then(()=>location.href="index.html");
+ .then(()=>{
+  alert("削除しました");
+  location.href="index.html";
+ });
+
 }
 
+// 初期表示
 load();
 
 </script>
+
 </body>
 </html>
