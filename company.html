@@ -17,6 +17,11 @@ button:hover{background:#1a5dc9;}
 .status-no{color:red;font-weight:bold;}
 table{border-collapse:collapse;margin-top:20px;}
 td,th{border:1px solid black;padding:10px;text-align:center;}
+.small-btn{
+ padding:5px 8px;
+ font-size:12px;
+ background:red;
+}
 </style>
 </head>
 
@@ -39,7 +44,7 @@ td,th{border:1px solid black;padding:10px;text-align:center;}
 
 <table>
 <thead>
-<tr><th>年度</th><th>状況</th></tr>
+<tr><th>年度</th><th>状況</th><th>削除</th></tr>
 </thead>
 <tbody id="yearTable"></tbody>
 </table>
@@ -69,7 +74,7 @@ const db = firebase.database();
 // ID取得
 const id = new URLSearchParams(location.search).get("id");
 
-// 表示（完全版）
+// 表示
 function load(){
  db.ref("companies/"+id).once("value", snap=>{
   const c = snap.val();
@@ -87,28 +92,41 @@ function load(){
   const table = document.getElementById("yearTable");
   table.innerHTML = "";
 
-  // 年度ループ
   Object.keys(years).sort().forEach(y=>{
 
    const tr = document.createElement("tr");
 
+   // 年度
    const tdYear = document.createElement("td");
    tdYear.textContent = y;
 
+   // 状態
    const tdStatus = document.createElement("td");
    const s = years[y] || "";
    tdStatus.textContent = s;
 
-   // クリックで変更
    tdStatus.onclick = ()=>changeStatus(y);
 
-   // 色
    if(s==="○") tdStatus.className="status-ok";
    if(s==="△") tdStatus.className="status-maybe";
    if(s==="×") tdStatus.className="status-no";
 
+   // 削除ボタン
+   const tdDelete = document.createElement("td");
+   const btn = document.createElement("button");
+   btn.textContent = "削除";
+   btn.className = "small-btn";
+
+   btn.onclick = (e)=>{
+    e.stopPropagation();
+    deleteYear(y);
+   };
+
+   tdDelete.appendChild(btn);
+
    tr.appendChild(tdYear);
    tr.appendChild(tdStatus);
+   tr.appendChild(tdDelete);
 
    table.appendChild(tr);
 
@@ -156,6 +174,18 @@ function addYear(){
  load();
 }
 
+// 年度削除
+function deleteYear(year){
+
+ if(!confirm(year + "年を削除する？")) return;
+
+ db.ref("companies/"+id+"/years/"+year).remove()
+ .then(()=>{
+  load();
+ });
+
+}
+
 // 編集
 function editCompany(){
  db.ref("companies/"+id).once("value", snap=>{
@@ -195,7 +225,7 @@ function editCompany(){
  });
 }
 
-// 削除
+// 削除（企業ごと）
 function deleteCompany(){
  if(!confirm("本当に削除する？")) return;
 
