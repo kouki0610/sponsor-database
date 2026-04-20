@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>企業情報（安定版）</title>
+<title>企業情報（操作改善版）</title>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -23,8 +23,8 @@ button:hover{background:#1a5dc9;}
 .delete-btn{background:red;}
 
 table{
- border-collapse:collapse;
  width:100%;
+ border-collapse:collapse;
  margin-top:20px;
 }
 
@@ -36,32 +36,26 @@ th,td{
 
 input{
  width:100%;
- padding:6px;
+ padding:5px;
  box-sizing:border-box;
 }
 
-/* 編集中ハイライト */
-.editing{
- background:#fff6d6;
+/* 表示用 */
+.view{
+ display:block;
 }
 
-/* 横スクロール備考 */
-.note-scroll{
- max-width:300px;
- overflow-x:auto;
- white-space:nowrap;
- border:1px solid #ddd;
- padding:5px;
- background:#fff;
+/* 編集用 */
+.edit{
+ display:none;
 }
 
-.small-btn{
- background:#e74c3c;
- color:white;
- border:none;
- padding:5px 8px;
- border-radius:4px;
- cursor:pointer;
+/* 編集モード */
+.editing .view{
+ display:none;
+}
+.editing .edit{
+ display:block;
 }
 </style>
 
@@ -70,40 +64,28 @@ input{
 <body>
 
 <button onclick="location.href='index.html'">←戻る</button>
-<button onclick="editCompany()">企業編集</button>
-<button onclick="deleteCompany()">削除</button>
 <button onclick="addYear()">年度追加</button>
 
 <h1 id="name"></h1>
-
-<p><b>住所：</b><span id="address"></span></p>
-<p><b>メール：</b><span id="email"></span></p>
-<p><b>電話：</b><span id="phone"></span></p>
-
-<p><b>地図：</b><a id="maplink" target="_blank">開く</a></p>
-
-<h2>協賛履歴</h2>
 
 <table>
 <thead>
 <tr>
 <th>年度</th>
-<th>状況</th>
+<th>状態</th>
 <th>金額</th>
 <th>備考</th>
-<th>削除</th>
+<th>操作</th>
 </tr>
 </thead>
+
 <tbody id="yearTable"></tbody>
 </table>
-
-<h2>備考（企業全体）</h2>
-<p id="notes"></p>
 
 <script>
 
 const firebaseConfig = {
- apiKey: "AIzaSyBMTL3U-88HpEXXW2jbW9QzmTk-JO17AcI",
+ apiKey: "AIzaSyBMTL3U-88HpEXXW2jbWJ",
  databaseURL: "https://teienn-kyousan-default-rtdb.asia-southeast1.firebasedatabase.app"
 };
 
@@ -115,7 +97,7 @@ const db = firebase.database();
 const id = new URLSearchParams(location.search).get("id");
 
 // =========================
-// メインロード
+// 読み込み
 // =========================
 function load(){
 
@@ -123,24 +105,16 @@ function load(){
   const c = snap.val();
   if(!c) return;
 
-  document.getElementById("name").textContent = c.name || "";
-  document.getElementById("address").textContent = c.address || "";
-  document.getElementById("email").textContent = c.email || "";
-  document.getElementById("phone").textContent = c.phone || "";
-  document.getElementById("notes").textContent = c.notes || "";
+  document.getElementById("name").textContent = c.name||"";
 
-  const map = c.map || "";
-  document.getElementById("maplink").href =
-   map.startsWith("http") ? map : "#";
-
-  const years = c.years || {};
+  const years = c.years||{};
 
   const table = document.getElementById("yearTable");
-  table.innerHTML = "";
+  table.innerHTML="";
 
   Object.keys(years).sort().forEach(y=>{
 
-   const d = years[y] || {status:"",amount:0,notes:""};
+   const d = years[y]||{status:"",amount:0,notes:""};
 
    const tr = document.createElement("tr");
 
@@ -150,161 +124,93 @@ function load(){
 
    // 状態
    const tdStatus = document.createElement("td");
-   tdStatus.textContent = d.status || "";
-   tdStatus.onclick = ()=>cycleStatus(y);
+   const statusView = document.createElement("span");
+   statusView.textContent = d.status||"";
 
-   if(d.status==="○") tdStatus.style.color="green";
-   if(d.status==="△") tdStatus.style.color="orange";
-   if(d.status==="×") tdStatus.style.color="red";
+   const statusEdit = document.createElement("input");
+   statusEdit.value = d.status||"";
 
-   // 金額（安定編集）
-   const tdAmount = createEditableCell(
-    d.amount || 0,
-    value=>{
-     db.ref(`companies/${id}/years/${y}/amount`)
-     .set(Number(value));
-    }
-   );
+   tdStatus.appendChild(statusView);
+   tdStatus.appendChild(statusEdit);
 
-   // 備考（安定編集＋横スクロール）
+   // 金額
+   const tdAmount = document.createElement("td");
+   const amountView = document.createElement("span");
+   amountView.textContent = d.amount||0;
+
+   const amountEdit = document.createElement("input");
+   amountEdit.type="number";
+   amountEdit.value = d.amount||0;
+
+   tdAmount.appendChild(amountView);
+   tdAmount.appendChild(amountEdit);
+
+   // 備考
    const tdNotes = document.createElement("td");
+   const notesView = document.createElement("span");
+   notesView.textContent = d.notes||"";
 
-   const wrap = document.createElement("div");
-   wrap.className="note-scroll";
+   const notesEdit = document.createElement("input");
+   notesEdit.value = d.notes||"";
 
-   const inputNotes = createEditableInput(
-    d.notes || "",
-    value=>{
-     db.ref(`companies/${id}/years/${y}/notes`)
-     .set(value);
-    }
-   );
+   tdNotes.appendChild(notesView);
+   tdNotes.appendChild(notesEdit);
 
-   inputNotes.style.minWidth="400px";
+   // 操作
+   const tdAction = document.createElement("td");
 
-   wrap.appendChild(inputNotes);
-   tdNotes.appendChild(wrap);
+   const editBtn = document.createElement("button");
+   editBtn.textContent="編集";
 
-   // 削除
-   const tdDelete = document.createElement("td");
-   const btn = document.createElement("button");
-   btn.textContent="削除";
-   btn.className="small-btn";
+   const saveBtn = document.createElement("button");
+   saveBtn.textContent="保存";
 
-   btn.onclick = (e)=>{
-    e.stopPropagation();
-    if(confirm("削除しますか？")){
-     db.ref(`companies/${id}/years/${y}`).remove()
-     .then(load);
-    }
+   const cancelBtn = document.createElement("button");
+   cancelBtn.textContent="キャンセル";
+
+   // 初期状態
+   tr.classList.remove("editing");
+
+   // 編集開始
+   editBtn.onclick = ()=>{
+    tr.classList.add("editing");
    };
 
-   tdDelete.appendChild(btn);
+   // キャンセル
+   cancelBtn.onclick = ()=>{
+    tr.classList.remove("editing");
+
+    statusEdit.value = d.status||"";
+    amountEdit.value = d.amount||0;
+    notesEdit.value = d.notes||"";
+   };
+
+   // 保存
+   saveBtn.onclick = ()=>{
+
+    db.ref(`companies/${id}/years/${y}`).set({
+     status:statusEdit.value,
+     amount:Number(amountEdit.value),
+     notes:notesEdit.value
+    });
+
+    tr.classList.remove("editing");
+    load();
+   };
+
+   tdAction.appendChild(editBtn);
+   tdAction.appendChild(saveBtn);
+   tdAction.appendChild(cancelBtn);
 
    tr.appendChild(tdYear);
    tr.appendChild(tdStatus);
    tr.appendChild(tdAmount);
    tr.appendChild(tdNotes);
-   tr.appendChild(tdDelete);
+   tr.appendChild(tdAction);
 
    table.appendChild(tr);
 
   });
-
- });
-
-}
-
-// =========================
-// 安定入力セル（汎用）
-// =========================
-function createEditableCell(initialValue, onSave){
-
- const td = document.createElement("td");
- const input = document.createElement("input");
-
- input.value = initialValue;
-
- let editing = false;
-
- input.onclick = ()=>{
-  if(editing) return;
-  if(confirm("編集しますか？")){
-   editing = true;
-   input.classList.add("editing");
-  }
- };
-
- input.ondblclick = (e)=>{
-  e.stopPropagation();
-  editing = true;
-  input.classList.add("editing");
- };
-
- input.onblur = ()=>{
-  if(!editing) return;
-  editing = false;
-  input.classList.remove("editing");
-  onSave(input.value);
- };
-
- td.appendChild(input);
- return td;
-}
-
-// =========================
-// 安定入力（備考用）
-// =========================
-function createEditableInput(value, onSave){
-
- const input = document.createElement("input");
- input.value = value;
-
- let editing = false;
-
- input.onclick = ()=>{
-  if(editing) return;
-  if(confirm("編集しますか？")){
-   editing = true;
-   input.classList.add("editing");
-  }
- };
-
- input.ondblclick = ()=>{
-  editing = true;
-  input.classList.add("editing");
- };
-
- input.onblur = ()=>{
-  if(!editing) return;
-  editing = false;
-  input.classList.remove("editing");
-  onSave(input.value);
- };
-
- return input;
-}
-
-// =========================
-// ステータス循環
-// =========================
-function cycleStatus(year){
-
- db.ref(`companies/${id}/years/${year}`).once("value", snap=>{
-
-  const d = snap.val() || {};
-  const now = d.status || "";
-
-  let next="";
-  if(now==="") next="○";
-  else if(now==="○") next="△";
-  else if(now==="△") next="×";
-  else next="";
-
-  db.ref(`companies/${id}/years/${year}/status`)
-  .set(next);
-
-  load();
 
  });
 
@@ -325,44 +231,6 @@ function addYear(){
  });
 
  load();
-}
-
-// =========================
-// 企業編集
-// =========================
-function editCompany(){
-
- db.ref("companies/"+id).once("value", snap=>{
-
-  const c = snap.val();
-
-  const name = prompt("企業名", c.name||"");
-  const address = prompt("住所", c.address||"");
-  const email = prompt("メール", c.email||"");
-  const phone = prompt("電話", c.phone||"");
-  const map = prompt("地図", c.map||"");
-  const notes = prompt("備考", c.notes||"");
-
-  db.ref("companies/"+id).update({
-   name,address,email,phone,map,notes
-  });
-
-  load();
-
- });
-
-}
-
-// =========================
-// 削除
-// =========================
-function deleteCompany(){
-
- if(confirm("本当に削除しますか？")){
-  db.ref("companies/"+id).remove()
-  .then(()=>location.href="index.html");
- }
-
 }
 
 load();
