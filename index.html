@@ -19,7 +19,6 @@ button{
  border-radius:5px;
  cursor:pointer;
 }
-
 button:hover{background:#1a5dc9;}
 
 ul{list-style:none;padding:0;}
@@ -105,15 +104,13 @@ if(localStorage.getItem("loggedin")==="true"){
 
 // 読み込み
 function loadCompanies(){
-
-db.ref("companies").on("value", snap=>{
- allCompanies = snap.val() || {};
- render();
-});
-
+ db.ref("companies").on("value", snap=>{
+  allCompanies = snap.val() || {};
+  render();
+ });
 }
 
-// 描画（ここが重要）
+// 描画（最新年度対応）
 function render(filter=""){
 
 const list = document.getElementById("companyList");
@@ -125,25 +122,31 @@ Object.values(allCompanies)
 
 const li = document.createElement("li");
 
-// 状態（2025年）
-const status = c.years?.["2025"] || "";
+// 年度データ取得
+const years = c.years || {};
 
-// 色クラス
+// 最新年度取得
+const latestYear = Object.keys(years).sort().slice(-1)[0] || "";
+
+// 状態
+const status = years[latestYear] || "";
+
+// 色
 let cls="";
 if(status==="○") cls="status-ok";
 if(status==="△") cls="status-maybe";
 if(status==="×") cls="status-no";
 
-// HTML
+// 表示
 li.innerHTML = `
  ${c.name}
  <span class="status ${cls}" 
- onclick="changeStatusFromList('${c.id}','2025', event)">
-  ${status}
+ onclick="changeStatusFromList('${c.id}','${latestYear}', event)">
+  ${latestYear ? latestYear + ":" : ""}${status}
  </span>
 `;
 
-// 詳細ページ
+// 詳細ページへ
 li.onclick = ()=>{
  location.href="company.html?id="+c.id;
 };
@@ -159,10 +162,15 @@ document.getElementById("search").oninput = e=>{
 render(e.target.value);
 };
 
-// 状態変更（一覧から）
+// 状態変更
 function changeStatusFromList(companyId, year, event){
 
 event.stopPropagation();
+
+if(!year){
+ alert("年度がありません");
+ return;
+}
 
 db.ref("companies/"+companyId).once("value", snap=>{
 
@@ -200,11 +208,7 @@ db.ref("companies/"+id).set({
  map:prompt("GoogleMap URL"),
  notes:prompt("備考"),
  years:{
-  "2025":"",
-  "2026":"",
-  "2027":"",
-  "2028":"",
-  "2029":""
+  "2025":""
  }
 });
 
