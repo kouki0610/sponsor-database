@@ -9,8 +9,39 @@
 
 <style>
 body{font-family:sans-serif;margin:40px;background:#f5f5f5;}
-button{margin:5px;padding:10px;border:none;background:#2c7be5;color:white;border-radius:5px;}
-li{background:white;margin:5px 0;padding:10px;border-radius:5px;cursor:pointer;}
+
+button{
+ padding:10px;
+ margin:5px;
+ border:none;
+ background:#2c7be5;
+ color:white;
+ border-radius:5px;
+ cursor:pointer;
+}
+
+button:hover{background:#1a5dc9;}
+
+ul{list-style:none;padding:0;}
+
+li{
+ background:white;
+ padding:15px;
+ margin-bottom:10px;
+ border-radius:5px;
+ cursor:pointer;
+ box-shadow:0 2px 5px rgba(0,0,0,0.1);
+}
+
+.status{
+ margin-left:10px;
+ font-weight:bold;
+ cursor:pointer;
+}
+
+.status-ok{color:green;}
+.status-maybe{color:orange;}
+.status-no{color:red;}
 </style>
 </head>
 
@@ -28,8 +59,6 @@ li{background:white;margin:5px 0;padding:10px;border-radius:5px;cursor:pointer;}
 
 <input type="text" id="search" placeholder="検索">
 
-<button onclick="showSponsors()">協賛あり</button>
-<button onclick="showAll()">全て</button>
 <button onclick="addCompany()">＋追加</button>
 <button onclick="exportCSV()">CSV</button>
 
@@ -43,24 +72,28 @@ let allCompanies = {};
 
 // Firebase
 const firebaseConfig = {
- apiKey: "AIza...",
+ apiKey: "AIzaSyBMTL3U-88HpEXXW2jbW9QzmTk-JO17AcI",
  databaseURL: "https://teienn-kyousan-default-rtdb.asia-southeast1.firebasedatabase.app"
 };
-firebase.initializeApp(firebaseConfig);
+
+if (!firebase.apps.length) {
+ firebase.initializeApp(firebaseConfig);
+}
+
 const db = firebase.database();
 
 // ログイン
 function login(){
-const pass = document.getElementById("password").value;
+ const pass = document.getElementById("password").value;
 
-if(pass==="joie"){
- localStorage.setItem("loggedin","true");
- document.getElementById("login").style.display="none";
- document.getElementById("main").style.display="block";
- loadCompanies();
-}else{
- alert("間違ったパスワードが入力されました");
-}
+ if(pass==="joie"){
+  localStorage.setItem("loggedin","true");
+  document.getElementById("login").style.display="none";
+  document.getElementById("main").style.display="block";
+  loadCompanies();
+ }else{
+  alert("パスワードが違います");
+ }
 }
 
 // 自動ログイン
@@ -80,7 +113,7 @@ db.ref("companies").on("value", snap=>{
 
 }
 
-// 描画
+// 描画（ここが重要）
 function render(filter=""){
 
 const list = document.getElementById("companyList");
@@ -90,10 +123,28 @@ Object.values(allCompanies)
 .filter(c=>c.name && c.name.includes(filter))
 .forEach(c=>{
 
-const li=document.createElement("li");
-li.textContent=c.name;
+const li = document.createElement("li");
 
-li.onclick=()=>{
+// 状態（2025年）
+const status = c.years?.["2025"] || "";
+
+// 色クラス
+let cls="";
+if(status==="○") cls="status-ok";
+if(status==="△") cls="status-maybe";
+if(status==="×") cls="status-no";
+
+// HTML
+li.innerHTML = `
+ ${c.name}
+ <span class="status ${cls}" 
+ onclick="changeStatusFromList('${c.id}','2025', event)">
+  ${status}
+ </span>
+`;
+
+// 詳細ページ
+li.onclick = ()=>{
  location.href="company.html?id="+c.id;
 };
 
@@ -108,26 +159,28 @@ document.getElementById("search").oninput = e=>{
 render(e.target.value);
 };
 
-// 協賛あり
-function showSponsors(){
-render(""); // 一旦全部表示してから絞る
+// 状態変更（一覧から）
+function changeStatusFromList(companyId, year, event){
 
-const list = document.getElementById("companyList");
-list.innerHTML="";
+event.stopPropagation();
 
-Object.values(allCompanies)
-.filter(c => c.years && Object.values(c.years).includes("○"))
-.forEach(c=>{
-const li=document.createElement("li");
-li.textContent=c.name;
-li.onclick=()=>location.href="company.html?id="+c.id;
-list.appendChild(li);
+db.ref("companies/"+companyId).once("value", snap=>{
+
+const c = snap.val();
+const current = c.years?.[year] || "";
+
+let next = "";
+
+if(current==="") next="○";
+else if(current==="○") next="△";
+else if(current==="△") next="×";
+else if(current==="×") next="";
+
+// 更新
+db.ref("companies/"+companyId+"/years/"+year).set(next);
+
 });
-}
 
-// 全部
-function showAll(){
-render();
 }
 
 // 追加
@@ -176,5 +229,6 @@ a.click();
 }
 
 </script>
+
 </body>
 </html>
