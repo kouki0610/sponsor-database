@@ -74,7 +74,7 @@ const db = firebase.database();
 // ID取得
 const id = new URLSearchParams(location.search).get("id");
 
-// 表示
+// 表示（2025初期化付き）
 function load(){
  db.ref("companies/"+id).once("value", snap=>{
   const c = snap.val();
@@ -87,7 +87,13 @@ function load(){
   document.getElementById("notes").textContent = c.notes || "";
   document.getElementById("maplink").href = c.map || "#";
 
-  const years = c.years || {"2025":""};
+  let years = c.years || {};
+
+  // 🔥 初期年度を2025にする（保存もする）
+  if(Object.keys(years).length === 0){
+   years = {"2025":""};
+   db.ref("companies/"+id+"/years").set(years);
+  }
 
   const table = document.getElementById("yearTable");
   table.innerHTML = "";
@@ -165,7 +171,6 @@ function changeStatus(year){
 
 // 年度追加
 function addYear(){
-
  const year = prompt("追加する年度（例：2030）");
  if(!year) return;
 
