@@ -8,7 +8,15 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 
 <style>
-body{font-family:sans-serif;margin:40px;background:#f5f5f5;}
+body{
+ font-family:sans-serif;
+ margin:40px;
+ background:#f5f5f5;
+}
+
+h1{
+ margin-bottom:20px;
+}
 
 button{
  padding:10px;
@@ -21,21 +29,39 @@ button{
 }
 button:hover{background:#1a5dc9;}
 
-ul{list-style:none;padding:0;}
+input{
+ padding:10px;
+ width:100%;
+ max-width:400px;
+ margin-bottom:10px;
+ border-radius:5px;
+ border:1px solid #ccc;
+}
+
+ul{
+ list-style:none;
+ padding:0;
+}
 
 li{
  background:white;
  padding:15px;
  margin-bottom:10px;
- border-radius:5px;
- cursor:pointer;
+ border-radius:8px;
  box-shadow:0 2px 5px rgba(0,0,0,0.1);
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
+ cursor:pointer;
 }
 
+li:hover{
+ background:#f0f4ff;
+}
+
+/* ステータス色 */
 .status{
- margin-left:10px;
  font-weight:bold;
- cursor:pointer;
 }
 
 .status-ok{color:green;}
@@ -46,12 +72,18 @@ li{
 
 <body>
 
+<!-- =========================
+ ログイン
+========================= -->
 <div id="login">
 <h2>ログイン</h2>
 <input type="password" id="password">
 <button onclick="login()">ログイン</button>
 </div>
 
+<!-- =========================
+ メイン
+========================= -->
 <div id="main" style="display:none">
 
 <h1>協賛企業データベース</h1>
@@ -59,9 +91,9 @@ li{
 <input type="text" id="search" placeholder="検索">
 
 <button onclick="addCompany()">＋追加</button>
-<button onclick="exportCSV()">CSV</button>
-<button onclick="location.href='totals.html'">協賛金額を見る</button>
- 
+<button onclick="exportCSV()">CSV出力</button>
+<button onclick="location.href='totals.html'">協賛金額</button>
+
 <ul id="companyList"></ul>
 
 </div>
@@ -70,7 +102,6 @@ li{
 
 let allCompanies = {};
 
-// Firebase
 const firebaseConfig = {
  apiKey: "AIzaSyBMTL3U-88HpEXXW2jbW9QzmTk-JO17AcI",
  databaseURL: "https://teienn-kyousan-default-rtdb.asia-southeast1.firebasedatabase.app"
@@ -82,7 +113,9 @@ if (!firebase.apps.length) {
 
 const db = firebase.database();
 
+// =========================
 // ログイン
+// =========================
 function login(){
  const pass = document.getElementById("password").value;
 
@@ -103,7 +136,9 @@ if(localStorage.getItem("loggedin")==="true"){
  loadCompanies();
 }
 
-// 読み込み
+// =========================
+// データ読み込み
+// =========================
 function loadCompanies(){
  db.ref("companies").on("value", snap=>{
   allCompanies = snap.val() || {};
@@ -111,7 +146,9 @@ function loadCompanies(){
  });
 }
 
-// 描画（修正版）
+// =========================
+// 表示
+// =========================
 function render(filter=""){
 
 const list = document.getElementById("companyList");
@@ -123,34 +160,33 @@ Object.values(allCompanies)
 
 const li = document.createElement("li");
 
-// years取得（無ければ2025作る）
-let years = c.years || {"2025":""};
+// id安全チェック
+if(!c.id) return;
 
-// 最新年度
+// 年度
+let years = c.years || {};
 const latestYear = Object.keys(years).sort().slice(-1)[0];
 
-// 状態
-const status = years[latestYear] || "";
+const status = latestYear ? years[latestYear] : "";
 
 // 色
-let cls="";
+let cls = "";
 if(status==="○") cls="status-ok";
 if(status==="△") cls="status-maybe";
 if(status==="×") cls="status-no";
 
 // 表示
 li.innerHTML = `
- ${c.name}
- <span class="status ${cls}" 
- onclick="changeStatusFromList('${c.id}','${latestYear}', event)">
-  ${latestYear}:${status}
+ <span>${c.name}</span>
+ <span class="status ${cls}">
+  ${latestYear ? latestYear + ":" + (status || "未") : "未登録"}
  </span>
 `;
 
-// 詳細ページ
-li.onclick = ()=>{
- location.href="company.html?id="+c.id;
-};
+// ★ここが重要（ページ遷移復活）
+li.addEventListener("click", ()=>{
+ location.href = "company.html?id=" + c.id;
+});
 
 list.appendChild(li);
 
@@ -158,49 +194,16 @@ list.appendChild(li);
 
 }
 
+// =========================
 // 検索
+// =========================
 document.getElementById("search").oninput = e=>{
 render(e.target.value);
 };
 
-// 状態変更（完全修正版）
-function changeStatusFromList(companyId, year, event){
-
-event.stopPropagation();
-
-db.ref("companies/"+companyId).once("value", snap=>{
-
-const c = snap.val() || {};
-let years = c.years || {};
-
-// 年度が無い場合は作る
-if(!year){
- year = "2025";
-}
-
-// yearsが空なら初期化
-if(Object.keys(years).length === 0){
- years = {"2025":""};
-}
-
-// 現在値
-const current = years[year] || "";
-
-let next = "";
-
-if(current==="") next="○";
-else if(current==="○") next="△";
-else if(current==="△") next="×";
-else if(current==="×") next="";
-
-// 保存
-db.ref("companies/"+companyId+"/years/"+year).set(next);
-
-});
-
-}
-
-// 追加（2025だけ）
+// =========================
+// 追加
+// =========================
 function addCompany(){
 
 const name = prompt("企業名");
@@ -221,10 +224,12 @@ db.ref("companies/"+id).set({
  }
 });
 
-alert("追加OK");
+alert("追加完了");
 }
 
+// =========================
 // CSV
+// =========================
 function exportCSV(){
 
 let csv="企業名,住所,メール,電話\n";
