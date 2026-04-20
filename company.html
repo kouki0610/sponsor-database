@@ -2,123 +2,179 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>企業情報</title>
+<title>協賛企業データベース</title>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 
 <style>
-
-body{
-font-family:sans-serif;
-margin:40px;
-}
-
-table{
-border-collapse:collapse;
-margin-top:20px;
-}
-
-td,th{
-border:1px solid black;
-padding:10px;
-text-align:center;
-}
-
-.status-ok{color:green;font-weight:bold;}
-.status-maybe{color:orange;font-weight:bold;}
-.status-no{color:red;font-weight:bold;}
-
+body{font-family:sans-serif;margin:40px;background:#f5f5f5;}
+button{margin:5px;padding:10px;border:none;background:#2c7be5;color:white;border-radius:5px;}
+li{background:white;margin:5px 0;padding:10px;border-radius:5px;cursor:pointer;}
 </style>
-
 </head>
 
 <body>
 
-<button onclick="location.href='index.html'">←一覧</button>
+<div id="login">
+<h2>ログイン</h2>
+<input type="password" id="password">
+<button onclick="login()">ログイン</button>
+</div>
 
-<h1 id="name"></h1>
+<div id="main" style="display:none">
 
-<p><b>住所：</b><span id="address"></span></p>
-<p><b>メール：</b><span id="email"></span></p>
-<p><b>電話：</b><span id="phone"></span></p>
+<h1>協賛企業データベース</h1>
 
-<a id="maplink" target="_blank">
-<img id="map" width="300">
-</a>
+<input type="text" id="search" placeholder="検索">
 
-<h2>協賛履歴</h2>
+<button onclick="showSponsors()">協賛あり</button>
+<button onclick="showAll()">全て</button>
+<button onclick="addCompany()">＋追加</button>
+<button onclick="exportCSV()">CSV</button>
 
-<table>
+<ul id="companyList"></ul>
 
-<tr><th>年度</th><th>状況</th></tr>
-
-<tr><td>2025</td><td id="y2025"></td></tr>
-<tr><td>2026</td><td id="y2026"></td></tr>
-<tr><td>2027</td><td id="y2027"></td></tr>
-<tr><td>2028</td><td id="y2028"></td></tr>
-<tr><td>2029</td><td id="y2029"></td></tr>
-
-</table>
-
-<p><b>備考：</b><span id="notes"></span></p>
+</div>
 
 <script>
 
-if(localStorage.getItem("loggedin")!=="true"){
-location.href="index.html";
+let allCompanies = {};
+
+// Firebase
+const firebaseConfig = {
+ apiKey: "AIza...",
+ databaseURL: "https://teienn-kyousan-default-rtdb.asia-southeast1.firebasedatabase.app"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ログイン
+function login(){
+const pass = document.getElementById("password").value;
+
+if(pass==="joie"){
+ localStorage.setItem("loggedin","true");
+ document.getElementById("login").style.display="none";
+ document.getElementById("main").style.display="block";
+ loadCompanies();
+}else{
+ alert("まちがったパスワードが入力されました");
+}
 }
 
-const firebaseConfig = {
-apiKey: "AIzaSyBMTL3U-88HpEXXW2jbW9QzmTk-JO17AcI",
-authDomain: "teienn-kyousan.firebaseapp.com",
-databaseURL: "https://teienn-kyousan-default-rtdb.asia-southeast1.firebasedatabase.app",
-projectId: "teienn-kyousan",
-storageBucket: "teienn-kyousan.firebasestorage.app",
-messagingSenderId: "567202456256",
-appId: "1:567202456256:web:156b0587040cbbfaa1c325"
+// 自動ログイン
+if(localStorage.getItem("loggedin")==="true"){
+ document.getElementById("login").style.display="none";
+ document.getElementById("main").style.display="block";
+ loadCompanies();
+}
+
+// 読み込み
+function loadCompanies(){
+
+db.ref("companies").on("value", snap=>{
+ allCompanies = snap.val() || {};
+ render();
+});
+
+}
+
+// 描画
+function render(filter=""){
+
+const list = document.getElementById("companyList");
+list.innerHTML="";
+
+Object.values(allCompanies)
+.filter(c=>c.name && c.name.includes(filter))
+.forEach(c=>{
+
+const li=document.createElement("li");
+li.textContent=c.name;
+
+li.onclick=()=>{
+ location.href="company.html?id="+c.id;
 };
 
-firebase.initializeApp(firebaseConfig);
-const db=firebase.database();
-
-const params=new URLSearchParams(location.search);
-const id=params.get("id");
-
-db.ref("companies/"+id).once("value",snap=>{
-
-const c=snap.val();
-
-document.getElementById("name").textContent=c.name||"";
-document.getElementById("address").textContent=c.address||"";
-document.getElementById("email").textContent=c.email||"";
-document.getElementById("phone").textContent=c.phone||"";
-
-document.getElementById("map").src=c.map||"";
-document.getElementById("maplink").href=c.map||"";
-
-document.getElementById("notes").textContent=c.notes||"";
-
-const years=c.years||{};
-
-for(const y in years){
-
-const s=years[y];
-const cell=document.getElementById("y"+y);
-
-if(!cell) continue;
-
-cell.textContent=s;
-
-if(s==="○"||s==="◎") cell.className="status-ok";
-if(s==="△") cell.className="status-maybe";
-if(s==="×") cell.className="status-no";
-
-}
+list.appendChild(li);
 
 });
 
-</script>
+}
 
+// 検索
+document.getElementById("search").oninput = e=>{
+render(e.target.value);
+};
+
+// 協賛あり
+function showSponsors(){
+render(""); // 一旦全部表示してから絞る
+
+const list = document.getElementById("companyList");
+list.innerHTML="";
+
+Object.values(allCompanies)
+.filter(c => c.years && Object.values(c.years).includes("○"))
+.forEach(c=>{
+const li=document.createElement("li");
+li.textContent=c.name;
+li.onclick=()=>location.href="company.html?id="+c.id;
+list.appendChild(li);
+});
+}
+
+// 全部
+function showAll(){
+render();
+}
+
+// 追加
+function addCompany(){
+
+const name = prompt("企業名");
+if(!name) return;
+
+const id = Date.now();
+
+db.ref("companies/"+id).set({
+ id:id,
+ name:name,
+ address:prompt("住所"),
+ email:prompt("メール"),
+ phone:prompt("電話"),
+ map:prompt("GoogleMap URL"),
+ notes:prompt("備考"),
+ years:{
+  "2025":"",
+  "2026":"",
+  "2027":"",
+  "2028":"",
+  "2029":""
+ }
+});
+
+alert("追加OK");
+}
+
+// CSV
+function exportCSV(){
+
+let csv="企業名,住所,メール,電話\n";
+
+Object.values(allCompanies).forEach(c=>{
+csv += `"${c.name||""}","${c.address||""}","${c.email||""}","${c.phone||""}"\n`;
+});
+
+const blob = new Blob([csv]);
+const a=document.createElement("a");
+a.href=URL.createObjectURL(blob);
+a.download="companies.csv";
+a.click();
+
+}
+
+</script>
 </body>
 </html>
