@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>企業情報（操作改善版）</title>
+<title>企業情報（編集ボタン制）</title>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -11,8 +11,8 @@
 body{font-family:sans-serif;margin:40px;}
 
 button{
- padding:10px;
- margin:5px;
+ padding:8px 12px;
+ margin:3px;
  border:none;
  background:#2c7be5;
  color:white;
@@ -40,22 +40,14 @@ input{
  box-sizing:border-box;
 }
 
-/* 表示用 */
-.view{
- display:block;
+/* 編集禁止状態 */
+input:disabled{
+ background:#f5f5f5;
 }
 
-/* 編集用 */
-.edit{
- display:none;
-}
-
-/* 編集モード */
-.editing .view{
- display:none;
-}
-.editing .edit{
- display:block;
+/* 行ごと編集状態 */
+.editing{
+ background:#fffbe6;
 }
 </style>
 
@@ -85,7 +77,7 @@ input{
 <script>
 
 const firebaseConfig = {
- apiKey: "AIzaSyBMTL3U-88HpEXXW2jbWJ",
+ apiKey: "AIzaSyBMTL3U",
  databaseURL: "https://teienn-kyousan-default-rtdb.asia-southeast1.firebasedatabase.app"
 };
 
@@ -108,7 +100,6 @@ function load(){
   document.getElementById("name").textContent = c.name||"";
 
   const years = c.years||{};
-
   const table = document.getElementById("yearTable");
   table.innerHTML="";
 
@@ -124,37 +115,28 @@ function load(){
 
    // 状態
    const tdStatus = document.createElement("td");
-   const statusView = document.createElement("span");
-   statusView.textContent = d.status||"";
+   const inputStatus = document.createElement("input");
+   inputStatus.value = d.status||"";
+   inputStatus.disabled = true;
 
-   const statusEdit = document.createElement("input");
-   statusEdit.value = d.status||"";
-
-   tdStatus.appendChild(statusView);
-   tdStatus.appendChild(statusEdit);
+   tdStatus.appendChild(inputStatus);
 
    // 金額
    const tdAmount = document.createElement("td");
-   const amountView = document.createElement("span");
-   amountView.textContent = d.amount||0;
+   const inputAmount = document.createElement("input");
+   inputAmount.type="number";
+   inputAmount.value = d.amount||0;
+   inputAmount.disabled = true;
 
-   const amountEdit = document.createElement("input");
-   amountEdit.type="number";
-   amountEdit.value = d.amount||0;
-
-   tdAmount.appendChild(amountView);
-   tdAmount.appendChild(amountEdit);
+   tdAmount.appendChild(inputAmount);
 
    // 備考
    const tdNotes = document.createElement("td");
-   const notesView = document.createElement("span");
-   notesView.textContent = d.notes||"";
+   const inputNotes = document.createElement("input");
+   inputNotes.value = d.notes||"";
+   inputNotes.disabled = true;
 
-   const notesEdit = document.createElement("input");
-   notesEdit.value = d.notes||"";
-
-   tdNotes.appendChild(notesView);
-   tdNotes.appendChild(notesEdit);
+   tdNotes.appendChild(inputNotes);
 
    // 操作
    const tdAction = document.createElement("td");
@@ -168,33 +150,47 @@ function load(){
    const cancelBtn = document.createElement("button");
    cancelBtn.textContent="キャンセル";
 
-   // 初期状態
-   tr.classList.remove("editing");
-
    // 編集開始
    editBtn.onclick = ()=>{
+
     tr.classList.add("editing");
+
+    inputStatus.disabled = false;
+    inputAmount.disabled = false;
+    inputNotes.disabled = false;
+
    };
 
    // キャンセル
    cancelBtn.onclick = ()=>{
+
     tr.classList.remove("editing");
 
-    statusEdit.value = d.status||"";
-    amountEdit.value = d.amount||0;
-    notesEdit.value = d.notes||"";
+    inputStatus.value = d.status||"";
+    inputAmount.value = d.amount||0;
+    inputNotes.value = d.notes||"";
+
+    inputStatus.disabled = true;
+    inputAmount.disabled = true;
+    inputNotes.disabled = true;
+
    };
 
    // 保存
    saveBtn.onclick = ()=>{
 
     db.ref(`companies/${id}/years/${y}`).set({
-     status:statusEdit.value,
-     amount:Number(amountEdit.value),
-     notes:notesEdit.value
+     status:inputStatus.value,
+     amount:Number(inputAmount.value),
+     notes:inputNotes.value
     });
 
     tr.classList.remove("editing");
+
+    inputStatus.disabled = true;
+    inputAmount.disabled = true;
+    inputNotes.disabled = true;
+
     load();
    };
 
