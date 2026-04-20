@@ -44,22 +44,6 @@ input{
  box-sizing:border-box;
 }
 
-/* ロック時の見た目 */
-.locked input{
- pointer-events:none;
- background:#eee;
-}
-
-/* 備考横スクロール */
-.note-scroll{
- max-width:300px;
- overflow-x:auto;
- white-space:nowrap;
- border:1px solid #ddd;
- padding:5px;
- background:#fff;
-}
-
 .small-btn{
  background:red;
  color:white;
@@ -75,7 +59,7 @@ input{
 <body>
 
 <button onclick="location.href='index.html'">←戻る</button>
-<button onclick="toggleEdit()" id="editBtn">編集</button>
+<button onclick="editCompany()">編集</button>
 <button onclick="deleteCompany()" class="delete-btn">削除</button>
 <button onclick="addYear()">年度追加</button>
 
@@ -103,7 +87,7 @@ input{
 <tbody id="yearTable"></tbody>
 </table>
 
-<h2>備考（企業全体）</h2>
+<h2>備考</h2>
 <p id="notes"></p>
 
 <script>
@@ -120,16 +104,18 @@ if(!firebase.apps.length){
 const db = firebase.database();
 const id = new URLSearchParams(location.search).get("id");
 
-let isEdit = false;
-let inputs = [];
-
 // =========================
-// 表示
+// 読み込み
 // =========================
 function load(){
 
  db.ref("companies/"+id).once("value", snap=>{
   const c = snap.val();
+
+  if(!c){
+   alert("データなし");
+   return;
+  }
 
   document.getElementById("name").textContent = c.name || "";
   document.getElementById("address").textContent = c.address || "";
@@ -145,7 +131,6 @@ function load(){
 
   const table = document.getElementById("yearTable");
   table.innerHTML = "";
-  inputs = [];
 
   Object.keys(years).sort().forEach(y=>{
 
@@ -171,26 +156,26 @@ function load(){
    const inputAmount = document.createElement("input");
    inputAmount.type = "number";
    inputAmount.value = d.amount || 0;
-   inputAmount.dataset.path = "amount";
+
+   inputAmount.onchange = ()=>{
+    db.ref("companies/"+id+"/years/"+y+"/amount")
+    .set(Number(inputAmount.value));
+   };
 
    tdAmount.appendChild(inputAmount);
 
-   // 備考
+   // 備考（年度）
    const tdNotes = document.createElement("td");
-
-   const wrapper = document.createElement("div");
-   wrapper.className = "note-scroll";
-
    const inputNotes = document.createElement("input");
    inputNotes.type = "text";
    inputNotes.value = d.notes || "";
-   inputNotes.style.minWidth = "300px";
-   inputNotes.dataset.path = "notes";
 
-   wrapper.appendChild(inputNotes);
-   tdNotes.appendChild(wrapper);
+   inputNotes.onchange = ()=>{
+    db.ref("companies/"+id+"/years/"+y+"/notes")
+    .set(inputNotes.value);
+   };
 
-   inputs.push({year:y, amount:inputAmount, notes:inputNotes});
+   tdNotes.appendChild(inputNotes);
 
    // 削除
    const tdDelete = document.createElement("td");
@@ -213,53 +198,6 @@ function load(){
 
    table.appendChild(tr);
 
-  });
-
-  applyLock();
-
- });
-
-}
-
-// =========================
-// 編集ON/OFF
-// =========================
-function toggleEdit(){
-
- isEdit = !isEdit;
-
- if(!isEdit){
-  saveAll();
- }
-
- applyLock();
-
- document.getElementById("editBtn").textContent =
- isEdit ? "保存" : "編集";
-}
-
-// ロック切替
-function applyLock(){
-
- inputs.forEach(obj=>{
-  obj.amount.disabled = !isEdit;
-  obj.notes.disabled = !isEdit;
- });
-
- document.getElementById("yearTable")
- .classList.toggle("locked", !isEdit);
-}
-
-// =========================
-// 一括保存
-// =========================
-function saveAll(){
-
- inputs.forEach(obj=>{
-
-  db.ref("companies/"+id+"/years/"+obj.year).update({
-   amount:Number(obj.amount.value),
-   notes:obj.notes.value
   });
 
  });
@@ -308,7 +246,7 @@ function addYear(){
 }
 
 // =========================
-// 削除
+// 年度削除
 // =========================
 function deleteYear(y){
 
@@ -316,6 +254,31 @@ function deleteYear(y){
 
  db.ref("companies/"+id+"/years/"+y).remove()
  .then(()=>load());
+}
+
+// =========================
+// 編集
+// =========================
+function editCompany(){
+
+ db.ref("companies/"+id).once("value", snap=>{
+  const c = snap.val();
+
+  const name = prompt("企業名", c.name || "");
+  const address = prompt("住所", c.address || "");
+  const email = prompt("メール", c.email || "");
+  const phone = prompt("電話", c.phone || "");
+  const map = prompt("GoogleMap URL", c.map || "");
+  const notes = prompt("備考", c.notes || "");
+
+  db.ref("companies/"+id).update({
+   name,address,email,phone,map,notes
+  });
+
+  load();
+
+ });
+
 }
 
 // =========================
