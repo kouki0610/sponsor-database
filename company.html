@@ -2,29 +2,53 @@
 <html>
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>企業情報</title>
 
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 
+<!-- アイコン -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
 <style>
+
+/* =========================
+  カラー
+========================= */
+:root{
+ --main:#7a1f2b;
+ --accent:#f4a62a;
+ --sub:#f6d6d6;
+}
+
+/* =========================
+  全体
+========================= */
 body{
- font-family:sans-serif;
+ font-family:-apple-system,BlinkMacSystemFont,sans-serif;
  margin:0;
  background:#f4f6f9;
 }
 
 .container{
  max-width:1000px;
- margin:40px auto;
- background:white;
+ margin:auto;
  padding:20px;
- border-radius:10px;
- box-shadow:0 2px 10px rgba(0,0,0,0.1);
 }
 
-h1{margin-top:0;}
+/* =========================
+  タイトル
+========================= */
+h1{
+ color:var(--main);
+ margin-bottom:10px;
+}
 
+/* =========================
+  ボタン
+========================= */
 .top-bar{
  display:flex;
  flex-wrap:wrap;
@@ -35,28 +59,44 @@ h1{margin-top:0;}
 button{
  padding:10px 15px;
  border:none;
- border-radius:6px;
- background:#2c7be5;
+ border-radius:8px;
+ background:var(--main);
  color:white;
  cursor:pointer;
 }
 
-button:hover{background:#1a5dc9;}
+button:hover{
+ background:#5c1620;
+}
 
-.delete-btn{background:red;}
+.delete-btn{
+ background:#e74c3c;
+}
 
-.info p{margin:5px 0;}
+/* =========================
+  カード
+========================= */
+.card{
+ background:white;
+ padding:20px;
+ border-radius:12px;
+ box-shadow:0 2px 8px rgba(0,0,0,0.08);
+ margin-bottom:20px;
+ border-left:6px solid var(--accent);
+}
 
+/* =========================
+  テーブル
+========================= */
 table{
  width:100%;
  border-collapse:collapse;
- margin-top:10px;
 }
 
 th{
- background:#2c7be5;
+ background:var(--main);
  color:white;
- padding:12px;
+ padding:10px;
 }
 
 td{
@@ -68,54 +108,85 @@ tr:hover{
  background:#f1f5ff;
 }
 
+/* =========================
+  入力
+========================= */
 input,select{
  width:100%;
  padding:6px;
- border:1px solid #ddd;
- border-radius:5px;
- box-sizing:border-box;
+ border:1px solid #ccc;
+ border-radius:6px;
 }
 
+/* 横スクロール備考 */
 .note-scroll{
- max-width:300px;
+ max-width:250px;
  overflow-x:auto;
  white-space:nowrap;
 }
 
+/* 小ボタン */
 .small-btn{
- background:red;
+ background:#e74c3c;
  color:white;
  padding:5px 8px;
  border:none;
- border-radius:4px;
- cursor:pointer;
+ border-radius:5px;
 }
-.small-btn:hover{opacity:0.8;}
+
+/* =========================
+  スマホ対応
+========================= */
+@media (max-width:600px){
+
+ table{
+  font-size:12px;
+ }
+
+ .top-bar button{
+  width:100%;
+ }
+
+}
 
 </style>
-
 </head>
 
 <body>
 
 <div class="container">
 
+<!-- ボタン -->
 <div class="top-bar">
-<button onclick="location.href='index.html'">←戻る</button>
-<button onclick="editCompany()">編集</button>
-<button onclick="deleteCompany()" class="delete-btn">削除</button>
-<button onclick="addYear()">年度追加</button>
+<button onclick="location.href='index.html'">
+ <i class="fa-solid fa-arrow-left"></i> 戻る
+</button>
+
+<button onclick="editCompany()">
+ <i class="fa-solid fa-pen"></i> 編集
+</button>
+
+<button onclick="deleteCompany()" class="delete-btn">
+ <i class="fa-solid fa-trash"></i> 削除
+</button>
+
+<button onclick="addYear()">
+ <i class="fa-solid fa-plus"></i> 年度追加
+</button>
 </div>
 
-<h1 id="name"></h1>
+<!-- 基本情報 -->
+<div class="card">
+<h1><i class="fa-solid fa-building"></i> <span id="name"></span></h1>
 
-<div class="info">
 <p><b>住所：</b><span id="address"></span></p>
 <p><b>メール：</b><span id="email"></span></p>
 <p><b>電話：</b><span id="phone"></span></p>
 <p><b>地図：</b><a id="maplink" target="_blank">開く</a></p>
 </div>
 
+<!-- 年度 -->
+<div class="card">
 <h2>協賛履歴</h2>
 
 <table>
@@ -132,9 +203,13 @@ input,select{
 
 <tbody id="yearTable"></tbody>
 </table>
+</div>
 
+<!-- 備考 -->
+<div class="card">
 <h2>備考（企業全体）</h2>
 <p id="notes"></p>
+</div>
 
 </div>
 
@@ -142,9 +217,7 @@ input,select{
 
 const firebaseConfig = {
  apiKey: "AIzaSyBMTL3U-88HpEXXW2jbW9QzmTk-JO17AcI",
- authDomain: "teienn-kyousan.firebaseapp.com",
- databaseURL: "https://teienn-kyousan-default-rtdb.asia-southeast1.firebasedatabase.app",
- projectId: "teienn-kyousan"
+ databaseURL: "https://teienn-kyousan-default-rtdb.asia-southeast1.firebasedatabase.app"
 };
 
 if(!firebase.apps.length){
@@ -154,23 +227,14 @@ if(!firebase.apps.length){
 const db = firebase.database();
 const id = new URLSearchParams(location.search).get("id");
 
-// =========================
-// 読み込み（安全版）
-// =========================
+/* =========================
+  読み込み
+========================= */
 function load(){
-
- if(!id){
-  alert("IDがありません");
-  return;
- }
 
  db.ref("companies/"+id).once("value", snap=>{
   const c = snap.val();
-
-  if(!c){
-   alert("データなし");
-   return;
-  }
+  if(!c) return;
 
   document.getElementById("name").textContent = c.name || "";
   document.getElementById("address").textContent = c.address || "";
@@ -188,18 +252,20 @@ function load(){
   Object.keys(years).sort().forEach(y=>{
 
    const d = years[y] || {status:"",amount:0,notes:""};
+   let locked = true;
 
    const tr = document.createElement("tr");
 
    const tdYear = document.createElement("td");
    tdYear.textContent = y;
 
+   // 状態
    const tdStatus = document.createElement("td");
    const select = document.createElement("select");
 
-   ["","○","△","×"].forEach(v=>{
+   ["","〇","△","×"].forEach(v=>{
     const opt = document.createElement("option");
-    opt.value = v;
+    opt.value = v === "〇" ? "○" : v;
     opt.textContent = v;
     select.appendChild(opt);
    });
@@ -214,9 +280,10 @@ function load(){
 
    tdStatus.appendChild(select);
 
+   // 金額
    const tdAmount = document.createElement("td");
    const inputA = document.createElement("input");
-   inputA.type = "number";
+   inputA.type="number";
    inputA.value = d.amount || 0;
    inputA.disabled = true;
 
@@ -227,15 +294,14 @@ function load(){
 
    tdAmount.appendChild(inputA);
 
+   // 備考
    const tdNotes = document.createElement("td");
-
    const wrap = document.createElement("div");
-   wrap.className = "note-scroll";
+   wrap.className="note-scroll";
 
    const inputN = document.createElement("input");
-   inputN.type = "text";
    inputN.value = d.notes || "";
-   inputN.style.minWidth = "400px";
+   inputN.style.minWidth="300px";
    inputN.disabled = true;
 
    inputN.onchange = ()=>{
@@ -246,39 +312,33 @@ function load(){
    wrap.appendChild(inputN);
    tdNotes.appendChild(wrap);
 
+   // 編集
    const tdEdit = document.createElement("td");
-
-   let locked = true;
-
    const editBtn = document.createElement("button");
-   editBtn.textContent = "編集";
+   editBtn.textContent="編集";
 
-   editBtn.onclick = ()=>{
-
+   editBtn.onclick=()=>{
     locked = !locked;
-
     select.disabled = locked;
     inputA.disabled = locked;
     inputN.disabled = locked;
-
     editBtn.textContent = locked ? "編集" : "完了";
-
    };
 
    tdEdit.appendChild(editBtn);
 
+   // 削除
    const tdDel = document.createElement("td");
+   const delBtn = document.createElement("button");
+   delBtn.textContent="削除";
+   delBtn.className="small-btn";
 
-   const btn = document.createElement("button");
-   btn.textContent = "削除";
-   btn.className = "small-btn";
-
-   btn.onclick = ()=>{
-    if(!confirm(y+"削除？")) return;
+   delBtn.onclick=()=>{
+    if(!confirm("削除する？")) return;
     db.ref("companies/"+id+"/years/"+y).remove().then(load);
    };
 
-   tdDel.appendChild(btn);
+   tdDel.appendChild(delBtn);
 
    tr.appendChild(tdYear);
    tr.appendChild(tdStatus);
@@ -295,11 +355,10 @@ function load(){
 
 }
 
-// =========================
-// 年度追加
-// =========================
+/* =========================
+  年度追加
+========================= */
 function addYear(){
-
  const y = prompt("年度");
  if(!y) return;
 
@@ -312,14 +371,12 @@ function addYear(){
  load();
 }
 
-// =========================
-// 編集
-// =========================
+/* =========================
+  編集
+========================= */
 function editCompany(){
-
  db.ref("companies/"+id).once("value", snap=>{
   const c = snap.val();
-  if(!c) return;
 
   db.ref("companies/"+id).update({
    name:prompt("企業名",c.name),
@@ -332,19 +389,16 @@ function editCompany(){
 
   load();
  });
-
 }
 
-// =========================
-// 削除
-// =========================
+/* =========================
+  削除
+========================= */
 function deleteCompany(){
-
  if(!confirm("本当に削除しますか？")) return;
 
  db.ref("companies/"+id).remove()
  .then(()=>location.href="index.html");
-
 }
 
 load();
