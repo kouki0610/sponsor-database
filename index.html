@@ -59,7 +59,6 @@ li:hover{
  background:#f0f4ff;
 }
 
-/* ステータス色 */
 .status{
  font-weight:bold;
 }
@@ -72,18 +71,12 @@ li:hover{
 
 <body>
 
-<!-- =========================
- ログイン
-========================= -->
 <div id="login">
 <h2>ログイン</h2>
 <input type="password" id="password">
 <button onclick="login()">ログイン</button>
 </div>
 
-<!-- =========================
- メイン
-========================= -->
 <div id="main" style="display:none">
 
 <h1>協賛企業データベース</h1>
@@ -147,43 +140,45 @@ function loadCompanies(){
 }
 
 // =========================
-// 表示
+// 表示（修正版）
 // =========================
 function render(filter=""){
 
 const list = document.getElementById("companyList");
 list.innerHTML="";
 
+if(!allCompanies) return;
+
 Object.values(allCompanies)
-.filter(c=>c.name && c.name.includes(filter))
+.filter(c=>c && c.name && c.name.includes(filter))
 .forEach(c=>{
+
+if(!c.id) return;
 
 const li = document.createElement("li");
 
-// id安全チェック
-if(!c.id) return;
-
-// 年度
 let years = c.years || {};
 const latestYear = Object.keys(years).sort().slice(-1)[0];
 
-const status = latestYear ? years[latestYear] : "";
+// ★ここが重要修正
+const data = latestYear ? years[latestYear] : {};
+const status = data.status || "";
 
-// 色
+// ○ → 〇 に変換
+const displayStatus = status === "○" ? "〇" : status;
+
 let cls = "";
 if(status==="○") cls="status-ok";
 if(status==="△") cls="status-maybe";
 if(status==="×") cls="status-no";
 
-// 表示
 li.innerHTML = `
  <span>${c.name}</span>
  <span class="status ${cls}">
-  ${latestYear ? latestYear + ":" + (status || "未") : "未登録"}
+  ${latestYear ? latestYear + ":" + (displayStatus || "未") : "未登録"}
  </span>
 `;
 
-// ★ここが重要（ページ遷移復活）
 li.addEventListener("click", ()=>{
  location.href = "company.html?id=" + c.id;
 });
@@ -220,7 +215,11 @@ db.ref("companies/"+id).set({
  map:prompt("GoogleMap URL"),
  notes:prompt("備考"),
  years:{
-  "2025":""
+  "2025":{
+   status:"",
+   amount:0,
+   notes:""
+  }
  }
 });
 
