@@ -73,6 +73,11 @@ li{
  box-shadow:0 2px 5px rgba(0,0,0,0.08);
 }
 
+/* 状況カラー */
+.status-〇{color:green;font-weight:bold;}
+.status-△{color:orange;font-weight:bold;}
+.status-×{color:red;font-weight:bold;}
+
 </style>
 </head>
 
@@ -146,10 +151,7 @@ function register(){
  auth.createUserWithEmailAndPassword(email, pass)
  .then(()=>{
   alert("登録完了！ログインしてください");
-
-  // ★ここが今回のポイント
   auth.signOut();
-
  })
  .catch(e=>{
   alert(e.message);
@@ -213,7 +215,7 @@ function loadCompanies(){
 }
 
 // =========================
-// 表示
+// 表示（★ここが今回の修正）
 // =========================
 function render(filter=""){
 
@@ -226,7 +228,39 @@ function render(filter=""){
 
   const li=document.createElement("li");
 
-  li.textContent = c.name;
+  const years = c.years || {};
+  const keys = Object.keys(years).sort().reverse();
+  const latestYear = keys[0];
+
+  let total = 0;
+  let status = "";
+
+  keys.forEach(y=>{
+   total += Number(years[y]?.amount || 0);
+  });
+
+  if(latestYear){
+   status = years[latestYear]?.status || "";
+  }
+
+  const statusClass =
+   status==="〇"?"status-〇":
+   status==="△"?"status-△":
+   status==="×"?"status-×":"";
+
+  li.innerHTML = `
+   <div style="display:flex;justify-content:space-between;align-items:center;">
+    <div>
+     <div style="font-weight:bold;">${c.name}</div>
+     <div style="font-size:13px;color:#666;">
+      合計：${total.toLocaleString()}円
+     </div>
+    </div>
+    <div class="${statusClass}">
+     ${latestYear || ""}：${status}
+    </div>
+   </div>
+  `;
 
   li.onclick=()=>{
    location.href="company.html?id="+c.id;
