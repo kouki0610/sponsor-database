@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>協賛企業データベース</title>
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -51,10 +50,6 @@ button{
  margin-top:5px;
 }
 
-button:hover{
- background:#5c1620;
-}
-
 .logout{
  background:#555;
 }
@@ -70,13 +65,34 @@ li{
  margin-top:10px;
  border-radius:8px;
  cursor:pointer;
- box-shadow:0 2px 5px rgba(0,0,0,0.08);
 }
 
-/* 状況カラー */
-.status-〇{color:green;font-weight:bold;}
-.status-△{color:orange;font-weight:bold;}
-.status-×{color:red;font-weight:bold;}
+/* 合計テーブル */
+.table-wrap{
+ overflow-x:auto;
+}
+
+table{
+ width:100%;
+ border-collapse:collapse;
+ min-width:400px;
+}
+
+th{
+ background:#7a1f2b;
+ color:white;
+ padding:10px;
+}
+
+td{
+ padding:10px;
+ border-bottom:1px solid #eee;
+ text-align:center;
+}
+
+.total{
+ font-weight:bold;
+}
 
 </style>
 </head>
@@ -89,8 +105,8 @@ li{
 <div id="login" class="card">
 <h2>ログイン / 新規登録</h2>
 
-<input type="email" id="email" placeholder="学校メール（@stu.yamato-u.ac.jp）">
-<input type="password" id="password" placeholder="パスワード">
+<input type="email" id="email">
+<input type="password" id="password">
 
 <button onclick="login()">ログイン</button>
 <button onclick="register()">新規登録</button>
@@ -103,6 +119,24 @@ li{
 
 <button class="logout" onclick="logout()">ログアウト</button>
 
+<!-- ===== 年度合計 ===== -->
+<div class="card">
+<h2>年度別 合計金額</h2>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>年度</th>
+<th>合計金額</th>
+</tr>
+</thead>
+<tbody id="totalTable"></tbody>
+</table>
+</div>
+</div>
+
+<!-- ===== 検索 ===== -->
 <input type="text" id="search" placeholder="検索">
 
 <button onclick="addCompany()">＋追加</button>
@@ -115,7 +149,6 @@ li{
 
 <script>
 
-// Firebase設定
 const firebaseConfig = {
  apiKey: "AIzaSyBMTL3U-88HpEXXW2jbW9QzmTk-JO17AcI",
  databaseURL: "https://teienn-kyousan-default-rtdb.asia-southeast1.firebasedatabase.app"
@@ -136,7 +169,7 @@ function isSchoolMail(email){
 }
 
 // =========================
-// 新規登録（→強制ログアウト）
+// 登録
 // =========================
 function register(){
 
@@ -144,17 +177,14 @@ function register(){
  const pass = document.getElementById("password").value;
 
  if(!isSchoolMail(email)){
-  alert("学校メールのみ登録できます");
+  alert("学校メールのみ");
   return;
  }
 
  auth.createUserWithEmailAndPassword(email, pass)
  .then(()=>{
-  alert("登録完了！ログインしてください");
+  alert("登録完了→ログインしてください");
   auth.signOut();
- })
- .catch(e=>{
-  alert(e.message);
  });
 
 }
@@ -168,14 +198,11 @@ function login(){
  const pass = document.getElementById("password").value;
 
  if(!isSchoolMail(email)){
-  alert("学校メールのみログインできます");
+  alert("学校メールのみ");
   return;
  }
 
- auth.signInWithEmailAndPassword(email, pass)
- .catch(()=>{
-  alert("ログイン失敗");
- });
+ auth.signInWithEmailAndPassword(email, pass);
 
 }
 
@@ -187,10 +214,9 @@ function logout(){
 }
 
 // =========================
-// ログイン状態監視
+// 状態監視
 // =========================
-auth.onAuthStateChanged(user => {
-
+auth.onAuthStateChanged(user=>{
  if(user){
   document.getElementById("login").style.display="none";
   document.getElementById("main").style.display="block";
@@ -199,23 +225,23 @@ auth.onAuthStateChanged(user => {
   document.getElementById("login").style.display="block";
   document.getElementById("main").style.display="none";
  }
-
 });
 
 // =========================
-// 企業読み込み
+// 読み込み
 // =========================
 function loadCompanies(){
 
  db.ref("companies").on("value", snap=>{
   allCompanies = snap.val() || {};
   render();
+  renderTotals(); // ★ここ追加
  });
 
 }
 
 // =========================
-// 表示（★ここが今回の修正）
+// 企業表示
 // =========================
 function render(filter=""){
 
@@ -228,39 +254,7 @@ function render(filter=""){
 
   const li=document.createElement("li");
 
-  const years = c.years || {};
-  const keys = Object.keys(years).sort().reverse();
-  const latestYear = keys[0];
-
-  let total = 0;
-  let status = "";
-
-  keys.forEach(y=>{
-   total += Number(years[y]?.amount || 0);
-  });
-
-  if(latestYear){
-   status = years[latestYear]?.status || "";
-  }
-
-  const statusClass =
-   status==="〇"?"status-〇":
-   status==="△"?"status-△":
-   status==="×"?"status-×":"";
-
-  li.innerHTML = `
-   <div style="display:flex;justify-content:space-between;align-items:center;">
-    <div>
-     <div style="font-weight:bold;">${c.name}</div>
-     <div style="font-size:13px;color:#666;">
-      合計：${total.toLocaleString()}円
-     </div>
-    </div>
-    <div class="${statusClass}">
-     ${latestYear || ""}：${status}
-    </div>
-   </div>
-  `;
+  li.textContent = c.name;
 
   li.onclick=()=>{
    location.href="company.html?id="+c.id;
@@ -273,14 +267,54 @@ function render(filter=""){
 }
 
 // =========================
+// 合計表示（totalsの中身）
+// =========================
+function renderTotals(){
+
+ let totals = {};
+
+ Object.values(allCompanies).forEach(c=>{
+  if(!c.years) return;
+
+  Object.entries(c.years).forEach(([year,data])=>{
+   const amount = Number(data.amount || 0);
+   if(!totals[year]) totals[year]=0;
+   totals[year]+=amount;
+  });
+ });
+
+ const table = document.getElementById("totalTable");
+ table.innerHTML="";
+
+ Object.keys(totals).sort().forEach(year=>{
+
+  const tr=document.createElement("tr");
+
+  const tdYear=document.createElement("td");
+  tdYear.textContent=year;
+
+  const tdAmount=document.createElement("td");
+  tdAmount.textContent=totals[year].toLocaleString()+"円";
+  tdAmount.className="total";
+
+  tr.appendChild(tdYear);
+  tr.appendChild(tdAmount);
+
+  table.appendChild(tr);
+
+ });
+
+}
+
+// =========================
 // 検索
 // =========================
-document.getElementById("search").oninput = e=>{
+document.getElementById("search").oninput=e=>{
  render(e.target.value);
 };
 
 // =========================
-// 企業追加
+// 追加
 // =========================
 function addCompany(){
 
@@ -292,11 +326,6 @@ function addCompany(){
  db.ref("companies/"+id).set({
   id:id,
   name:name,
-  address:prompt("住所"),
-  email:prompt("メール"),
-  phone:prompt("電話"),
-  map:prompt("GoogleMap URL"),
-  notes:prompt("備考"),
   years:{
    "2025":{
     status:"",
@@ -305,8 +334,6 @@ function addCompany(){
    }
   }
  });
-
- alert("追加OK");
 
 }
 
