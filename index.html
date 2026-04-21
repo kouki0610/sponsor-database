@@ -67,33 +67,6 @@ li{
  cursor:pointer;
 }
 
-/* 合計テーブル */
-.table-wrap{
- overflow-x:auto;
-}
-
-table{
- width:100%;
- border-collapse:collapse;
- min-width:400px;
-}
-
-th{
- background:#7a1f2b;
- color:white;
- padding:10px;
-}
-
-td{
- padding:10px;
- border-bottom:1px solid #eee;
- text-align:center;
-}
-
-.total{
- font-weight:bold;
-}
-
 </style>
 </head>
 
@@ -119,24 +92,9 @@ td{
 
 <button class="logout" onclick="logout()">ログアウト</button>
 
-<!-- ===== 年度合計 ===== -->
-<div class="card">
-<h2>年度別 合計金額</h2>
+<!-- ★ totalsページへ -->
+<button onclick="location.href='totals.html'">年度合計を見る</button>
 
-<div class="table-wrap">
-<table>
-<thead>
-<tr>
-<th>年度</th>
-<th>合計金額</th>
-</tr>
-</thead>
-<tbody id="totalTable"></tbody>
-</table>
-</div>
-</div>
-
-<!-- ===== 検索 ===== -->
 <input type="text" id="search" placeholder="検索">
 
 <button onclick="addCompany()">＋追加</button>
@@ -161,18 +119,12 @@ const auth = firebase.auth();
 
 let allCompanies = {};
 
-// =========================
-// メール制限
-// =========================
 function isSchoolMail(email){
  return email.endsWith("@stu.yamato-u.ac.jp");
 }
 
-// =========================
 // 登録
-// =========================
 function register(){
-
  const email = document.getElementById("email").value.trim();
  const pass = document.getElementById("password").value;
 
@@ -186,14 +138,10 @@ function register(){
   alert("登録完了→ログインしてください");
   auth.signOut();
  });
-
 }
 
-// =========================
 // ログイン
-// =========================
 function login(){
-
  const email = document.getElementById("email").value.trim();
  const pass = document.getElementById("password").value;
 
@@ -202,47 +150,36 @@ function login(){
   return;
  }
 
- auth.signInWithEmailAndPassword(email, pass);
-
+ auth.signInWithEmailAndPassword(email, pass)
+ .catch(()=>alert("ログイン失敗"));
 }
 
-// =========================
 // ログアウト
-// =========================
 function logout(){
  auth.signOut();
 }
 
-// =========================
 // 状態監視
-// =========================
 auth.onAuthStateChanged(user=>{
  if(user){
-  document.getElementById("login").style.display="none";
-  document.getElementById("main").style.display="block";
-  loadCompanies();
+  login.style.display="none";
+  main.style.display="block";
+  load();
  }else{
-  document.getElementById("login").style.display="block";
-  document.getElementById("main").style.display="none";
+  login.style.display="block";
+  main.style.display="none";
  }
 });
 
-// =========================
 // 読み込み
-// =========================
-function loadCompanies(){
-
+function load(){
  db.ref("companies").on("value", snap=>{
   allCompanies = snap.val() || {};
   render();
-  renderTotals(); // ★ここ追加
  });
-
 }
 
-// =========================
-// 企業表示
-// =========================
+// 表示（最新年度＋合計）
 function render(filter=""){
 
  const list = document.getElementById("companyList");
@@ -252,9 +189,36 @@ function render(filter=""){
  .filter(c=>c.name && c.name.includes(filter))
  .forEach(c=>{
 
+  const years = c.years || {};
+  const keys = Object.keys(years).sort().reverse();
+  const latestYear = keys[0];
+
+  let total = 0;
+  let status = "";
+
+  keys.forEach(y=>{
+   total += Number(years[y]?.amount || 0);
+  });
+
+  if(latestYear){
+   status = years[latestYear]?.status || "";
+  }
+
   const li=document.createElement("li");
 
-  li.textContent = c.name;
+  li.innerHTML = `
+   <div style="display:flex;justify-content:space-between;">
+    <div>
+     <div style="font-weight:bold;">${c.name}</div>
+     <div style="font-size:13px;color:#666;">
+      合計：${total.toLocaleString()}円
+     </div>
+    </div>
+    <div style="font-weight:bold;">
+     ${latestYear || ""}：${status}
+    </div>
+   </div>
+  `;
 
   li.onclick=()=>{
    location.href="company.html?id="+c.id;
@@ -266,58 +230,13 @@ function render(filter=""){
 
 }
 
-// =========================
-// 合計表示（totalsの中身）
-// =========================
-function renderTotals(){
-
- let totals = {};
-
- Object.values(allCompanies).forEach(c=>{
-  if(!c.years) return;
-
-  Object.entries(c.years).forEach(([year,data])=>{
-   const amount = Number(data.amount || 0);
-   if(!totals[year]) totals[year]=0;
-   totals[year]+=amount;
-  });
- });
-
- const table = document.getElementById("totalTable");
- table.innerHTML="";
-
- Object.keys(totals).sort().forEach(year=>{
-
-  const tr=document.createElement("tr");
-
-  const tdYear=document.createElement("td");
-  tdYear.textContent=year;
-
-  const tdAmount=document.createElement("td");
-  tdAmount.textContent=totals[year].toLocaleString()+"円";
-  tdAmount.className="total";
-
-  tr.appendChild(tdYear);
-  tr.appendChild(tdAmount);
-
-  table.appendChild(tr);
-
- });
-
-}
-
-// =========================
 // 検索
-// =========================
 document.getElementById("search").oninput=e=>{
  render(e.target.value);
 };
 
-// =========================
 // 追加
-// =========================
 function addCompany(){
-
  const name = prompt("企業名");
  if(!name) return;
 
@@ -334,7 +253,6 @@ function addCompany(){
    }
   }
  });
-
 }
 
 </script>
